@@ -17,6 +17,8 @@
             <div class="flashcard" data-card-id="{{ card.id }}" data-index="{{ loop.index }}" 
                  style="{% if loop.index != 1 %}display: none;{% endif %}">
                 
+                <button class="card-delete-btn" onclick="deleteCard({{ card.id }}, event)" title="Delete this card">×</button>
+                
                 <div class="card-question">
                     <h3>{{ card.question }}</h3>
                 </div>
@@ -71,21 +73,22 @@
                         <div class="rating-grid">
                             <button class="rating-btn rating-again" onclick="rateCard({{ card.id }}, 'again')">
                                 <span class="rating-label">Again</span>
-                                <span class="rating-time">&lt;10m</span>
+                                <span class="rating-time" id="time-again-{{ card.id }}">&lt;10m</span>
                             </button>
                             <button class="rating-btn rating-hard" onclick="rateCard({{ card.id }}, 'hard')">
                                 <span class="rating-label">Hard</span>
-                                <span class="rating-time">1d</span>
+                                <span class="rating-time" id="time-hard-{{ card.id }}">1d</span>
                             </button>
                             <button class="rating-btn rating-good" onclick="rateCard({{ card.id }}, 'good')">
                                 <span class="rating-label">Good</span>
-                                <span class="rating-time">3d</span>
+                                <span class="rating-time" id="time-good-{{ card.id }}">3d</span>
                             </button>
                             <button class="rating-btn rating-easy" onclick="rateCard({{ card.id }}, 'easy')">
                                 <span class="rating-label">Easy</span>
-                                <span class="rating-time">7d</span>
+                                <span class="rating-time" id="time-easy-{{ card.id }}">7d</span>
                             </button>
                         </div>
+                        <button class="btn btn-secondary btn-sm" style="margin-top: 1rem;" onclick="openScheduleEditor({{ card.id }})">⚙️ Edit Schedule</button>
                     </div>
                 </div>
             </div>
@@ -99,6 +102,52 @@
         <div class="complete-actions">
             <a href="{{ url_for('deck_detail', deck_id=deck.id) }}" class="btn btn-primary">Back to Deck</a>
             <a href="{{ url_for('stats') }}" class="btn btn-secondary">View Statistics</a>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Editor Modal -->
+<div id="schedule-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>⚙️ Edit Card Schedule</h2>
+            <button class="modal-close" onclick="closeScheduleEditor()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="card-state">Card State</label>
+                <select id="card-state" class="form-control">
+                    <option value="new">New</option>
+                    <option value="learning">Learning</option>
+                    <option value="review">Review</option>
+                    <option value="mastered">Mastered</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="next-review-date">Next Review Date</label>
+                <input type="datetime-local" id="next-review-date" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="interval-days">Interval (Days)</label>
+                <input type="number" id="interval-days" class="form-control" min="0" value="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="ease-factor">Ease Factor</label>
+                <input type="number" id="ease-factor" class="form-control" min="1.3" max="5.0" step="0.1" value="2.5">
+                <small>Controls how quickly intervals grow (1.3-5.0, default 2.5)</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="repetitions">Successful Repetitions</label>
+                <input type="number" id="repetitions" class="form-control" min="0" value="0">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeScheduleEditor()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveSchedule()">Save Changes</button>
         </div>
     </div>
 </div>

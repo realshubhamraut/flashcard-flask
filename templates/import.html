@@ -18,6 +18,7 @@
                 <select id="format_type" name="format_type" required>
                     <option value="shubham">Shubham's Format (Standard)</option>
                     <option value="payal">Payal's Format (With topics & difficulty)</option>
+                    <option value="sanfoundry">Sanfoundry Format (Quiz platform)</option>
                 </select>
                 <small>Choose based on who created the JSON file</small>
             </div>
@@ -33,6 +34,25 @@
 
     <div class="format-example">
         <h2>JSON Format Examples</h2>
+        
+        <h3>Sanfoundry Format (Quiz Platform)</h3>
+        <p>Format from Sanfoundry quiz website</p>
+        <pre><code>[
+  {
+    "number": 1,
+    "question": "Is Python case sensitive?",
+    "options": {
+      "a": "yes",
+      "b": "no",
+      "c": "machine dependent",
+      "d": "none of the mentioned"
+    },
+    "answer": "a",
+    "explanation": "Yes, Python is case sensitive.",
+    "category": "Python Basics",
+    "source_url": "https://www.sanfoundry.com/..."
+  }
+]</code></pre>
         
         <h3>Payal's Format (With Topics & Difficulty)</h3>
         <p>Extended format with topic, difficulty, and citation markers</p>
@@ -115,6 +135,7 @@
         
         <h3>Supported Formats</h3>
         <ul>
+            <li><strong>Sanfoundry Format:</strong> Quiz format with options object (a, b, c, d) and answer field.</li>
             <li><strong>Payal's Format:</strong> Array with topic, difficulty, and citation markers (cleaned automatically).</li>
             <li><strong>Shubham's Simple Array:</strong> Just an array of card objects. Deck name comes from filename.</li>
             <li><strong>Shubham's Full Object:</strong> Object with "name", "description", and "cards" array.</li>

@@ -4,8 +4,15 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>{{ deck.name }}</h1>
+    <h1 id="deck-name-display">{{ deck.name }}</h1>
+    <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-secondary btn-sm" onclick="enableDeckNameEdit()">✏️ Rename</button>
+        <button id="save-deck-name" class="btn btn-primary btn-sm" style="display: none;" onclick="saveDeckName({{ deck.id }})">💾 Save</button>
+        <button id="cancel-deck-name" class="btn btn-secondary btn-sm" style="display: none;" onclick="cancelDeckNameEdit()">❌ Cancel</button>
+    </div>
 </div>
+
+<input type="text" id="deck-name-input" class="deck-name-input" value="{{ deck.name }}" style="display: none;">
 
 {% if deck.description %}
     <p class="deck-description-large">{{ deck.description }}</p>
@@ -77,4 +84,75 @@
 <div class="deck-info">
     <p><strong>Created:</strong> {{ deck.created_at|timeago }}</p>
 </div>
+
+<script>
+let originalDeckName = "{{ deck.name }}";
+
+function enableDeckNameEdit() {
+    document.getElementById('deck-name-display').style.display = 'none';
+    document.getElementById('deck-name-input').style.display = 'block';
+    document.getElementById('save-deck-name').style.display = 'inline-block';
+    document.getElementById('cancel-deck-name').style.display = 'inline-block';
+    document.querySelector('.page-header button:first-of-type').style.display = 'none';
+    document.getElementById('deck-name-input').focus();
+    document.getElementById('deck-name-input').select();
+}
+
+function cancelDeckNameEdit() {
+    document.getElementById('deck-name-display').style.display = 'block';
+    document.getElementById('deck-name-input').style.display = 'none';
+    document.getElementById('deck-name-input').value = originalDeckName;
+    document.getElementById('save-deck-name').style.display = 'none';
+    document.getElementById('cancel-deck-name').style.display = 'none';
+    document.querySelector('.page-header button:first-of-type').style.display = 'inline-block';
+}
+
+function saveDeckName(deckId) {
+    const newName = document.getElementById('deck-name-input').value.trim();
+    
+    if (!newName) {
+        alert('Deck name cannot be empty');
+        return;
+    }
+    
+    fetch(`/api/deck/${deckId}/rename`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('deck-name-display').textContent = newName;
+            originalDeckName = newName;
+            cancelDeckNameEdit();
+            
+            // Update page title
+            document.title = newName + ' - Deck Details';
+        } else {
+            alert('Failed to rename deck: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to rename deck. Please try again.');
+    });
+}
+
+// Allow Enter to save, Escape to cancel
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('deck-name-input');
+    if (input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                saveDeckName({{ deck.id }});
+            } else if (e.key === 'Escape') {
+                cancelDeckNameEdit();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

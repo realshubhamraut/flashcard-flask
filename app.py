@@ -226,6 +226,97 @@ def review_card():
     })
 
 
+@app.route('/api/card/<int:card_id>/delete', methods=['DELETE'])
+@login_required
+def delete_card(card_id):
+    """Delete a card"""
+    card = Card.query.get_or_404(card_id)
+    
+    # Verify ownership through deck
+    if card.deck.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        db.session.delete(card)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/card/<int:card_id>/progress', methods=['GET', 'PUT'])
+@login_required
+def card_progress(card_id):
+    """Get or update card progress"""
+    card = Card.query.get_or_404(card_id)
+    
+    # Verify ownership through deck
+    if card.deck.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if request.method == 'GET':
+        # Get current progress
+        progress = card.progress
+        if not progress:
+            progress = SpacedRepetition.initialize_card_progress(card)
+            db.session.add(progress)
+            db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'progress': {
+                'state': progress.state,
+                'due_date': progress.due_date.isoformat() if progress.due_date else None,
+                'interval': progress.interval,
+                'ease_factor': progress.ease_factor,
+                'repetitions': progress.repetitions,
+                'lapses': progress.lapses
+            }
+        })
+    
+    elif request.method == 'PUT':
+        # Update progress manually
+        data = request.json
+        progress = card.progress
+        if not progress:
+            progress = SpacedRepetition.initialize_card_progress(card)
+            db.session.add(progress)
+        
+        # Update fields
+        if 'state' in data:
+            progress.state = data['state']
+        if 'interval' in data:
+            progress.interval = data['interval']
+        if 'ease_factor' in data:
+            progress.ease_factor = max(1.3, min(5.0, data['ease_factor']))
+        if 'repetitions' in data:
+            progress.repetitions = data['repetitions']
+        if 'due_date' in data:
+            # Parse datetime string
+            from dateutil import parser
+            progress.due_date = parser.parse(data['due_date'])
+        
+        progress.updated_at = datetime.utcnow()
+        
+        try:
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'progress': {
+                    'state': progress.state,
+                    'due_date': progress.due_date.isoformat(),
+                    'interval': progress.interval,
+                    'ease_factor': progress.ease_factor,
+                    'repetitions': progress.repetitions
+                }
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/import', methods=['GET', 'POST'])
 @login_required
 def import_deck():
@@ -274,45 +365,76 @@ def import_deck():
                 
                 # Create cards
                 for card_data in cards_data:
-                    # Get options and clean up any [cite_start] markers for Payal's format
-                    options = card_data.get('options')
-                    
-                    # For Payal's format, clean up the description and hint from citation markers
-                    description = card_data.get('description', '')
-                    hint = card_data.get('hint', '')
-                    
-                    if format_type == 'payal':
-                        # Remove [cite_start] markers and clean citations
-                        if description:
-                            description = description.replace('[cite_start]', '').strip()
-                        if hint:
-                            hint = hint.replace('[cite_start]', '').strip()
-                    
-                    correct_answer_value = card_data.get('correct_answer')
-                    
-                    # Handle correct_answer - support both index (int) and string value
-                    correct_answer_index = None
-                    if options and correct_answer_value is not None:
-                        if isinstance(correct_answer_value, int):
-                            # Already an index
-                            correct_answer_index = correct_answer_value
-                        elif isinstance(correct_answer_value, str):
-                            # Convert string answer to index
-                            try:
-                                correct_answer_index = options.index(correct_answer_value)
-                            except ValueError:
-                                # If exact match not found, keep as None or use first match
-                                correct_answer_index = None
+                    # Handle different formats
+                    if format_type == 'sanfoundry':
+                        # Sanfoundry format: options as object {a, b, c, d}, answer as letter
+                        options_dict = card_data.get('options', {})
+                        answer_letter = card_data.get('answer', '')
+                        
+                        # Convert options dict to array
+                        options = [
+                            options_dict.get('a', ''),
+                            options_dict.get('b', ''),
+                            options_dict.get('c', ''),
+                            options_dict.get('d', '')
+                        ]
+                        # Filter out empty options
+                        options = [opt for opt in options if opt]
+                        
+                        # Convert answer letter to index
+                        letter_to_index = {'a': 0, 'b': 1, 'c': 2, 'd': 3}
+                        correct_answer_index = letter_to_index.get(answer_letter.lower(), 0)
+                        
+                        # Map sanfoundry fields to our schema
+                        question = card_data.get('question', '')
+                        hint = None  # Sanfoundry doesn't have hints
+                        description = card_data.get('explanation', '')
+                        reference = card_data.get('source_url', '')
+                        code = None  # Sanfoundry doesn't have code field
+                        
+                    else:
+                        # Get options and clean up any [cite_start] markers for Payal's format
+                        options = card_data.get('options')
+                        
+                        # For Payal's format, clean up the description and hint from citation markers
+                        description = card_data.get('description', '')
+                        hint = card_data.get('hint', '')
+                        question = card_data.get('question')
+                        reference = card_data.get('reference')
+                        code = card_data.get('code')
+                        
+                        if format_type == 'payal':
+                            # Remove [cite_start] markers and clean citations
+                            if description:
+                                description = description.replace('[cite_start]', '').strip()
+                            if hint:
+                                hint = hint.replace('[cite_start]', '').strip()
+                        
+                        correct_answer_value = card_data.get('correct_answer')
+                        
+                        # Handle correct_answer - support both index (int) and string value
+                        correct_answer_index = None
+                        if options and correct_answer_value is not None:
+                            if isinstance(correct_answer_value, int):
+                                # Already an index
+                                correct_answer_index = correct_answer_value
+                            elif isinstance(correct_answer_value, str):
+                                # Convert string answer to index
+                                try:
+                                    correct_answer_index = options.index(correct_answer_value)
+                                except ValueError:
+                                    # If exact match not found, keep as None or use first match
+                                    correct_answer_index = None
                     
                     card = Card(
                         deck_id=deck.id,
-                        question=card_data.get('question'),
+                        question=question,
                         hint=hint,
                         options=options,
                         correct_answer=correct_answer_index,
                         description=description,
-                        reference=card_data.get('reference'),
-                        code=card_data.get('code')
+                        reference=reference,
+                        code=code
                     )
                     db.session.add(card)
                 
@@ -338,23 +460,38 @@ def stats():
     # Overall statistics for current user
     total_decks = Deck.query.filter_by(user_id=current_user.id).count()
     total_cards = Card.query.join(Deck).filter(Deck.user_id == current_user.id).count()
-    total_reviews = Review.query.count()
+    
+    # Get reviews only for cards belonging to current user's decks
+    total_reviews = Review.query.join(Card).join(Deck).filter(
+        Deck.user_id == current_user.id
+    ).count()
     
     # Today's statistics
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_reviews = Review.query.filter(Review.reviewed_at >= today_start).count()
+    today_reviews = Review.query.join(Card).join(Deck).filter(
+        Deck.user_id == current_user.id,
+        Review.reviewed_at >= today_start
+    ).count()
     
-    # Calculate accuracy for today
-    today_review_data = Review.query.filter(Review.reviewed_at >= today_start).all()
-    today_correct = sum(1 for r in today_review_data if r.rating in ['good', 'easy'])
-    today_accuracy = round((today_correct / today_reviews * 100), 1) if today_reviews > 0 else 0
+    # Calculate accuracy for today - FIXED
+    today_review_data = Review.query.join(Card).join(Deck).filter(
+        Deck.user_id == current_user.id,
+        Review.reviewed_at >= today_start
+    ).all()
+    
+    if today_reviews > 0:
+        today_correct = sum(1 for r in today_review_data if r.rating in ['good', 'easy'])
+        today_accuracy = round((today_correct / today_reviews * 100), 1)
+    else:
+        today_accuracy = 0
     
     # Get review history (last 30 days)
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     review_history = db.session.query(
         func.date(Review.reviewed_at).label('date'),
         func.count(Review.id).label('count')
-    ).filter(
+    ).join(Card).join(Deck).filter(
+        Deck.user_id == current_user.id,
         Review.reviewed_at >= thirty_days_ago
     ).group_by(
         func.date(Review.reviewed_at)
@@ -363,8 +500,10 @@ def stats():
     # Format for chart - date is already a string from SQLite
     review_chart_data = [{'date': str(r.date), 'count': r.count} for r in review_history]
     
-    # Get recent sessions
-    recent_sessions = StudySession.query.order_by(
+    # Get recent sessions for current user only
+    recent_sessions = StudySession.query.join(Deck).filter(
+        Deck.user_id == current_user.id
+    ).order_by(
         StudySession.started_at.desc()
     ).limit(10).all()
     
@@ -390,6 +529,30 @@ def delete_deck(deck_id):
     
     flash(f'Deck "{deck_name}" deleted successfully', 'success')
     return redirect(url_for('index'))
+
+
+@app.route('/api/deck/<int:deck_id>/rename', methods=['PUT'])
+@login_required
+def rename_deck(deck_id):
+    """Rename a deck"""
+    deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    
+    data = request.json
+    new_name = data.get('name', '').strip()
+    
+    if not new_name:
+        return jsonify({'error': 'Deck name cannot be empty'}), 400
+    
+    if len(new_name) > 200:
+        return jsonify({'error': 'Deck name too long (max 200 characters)'}), 400
+    
+    try:
+        deck.name = new_name
+        db.session.commit()
+        return jsonify({'success': True, 'name': new_name})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/session/<int:session_id>/end', methods=['POST'])

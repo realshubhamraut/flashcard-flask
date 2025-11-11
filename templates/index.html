@@ -13,7 +13,29 @@
         {% for item in deck_stats %}
             <div class="deck-card">
                 <div class="deck-card-header">
-                    <h2>{{ item.deck.name }}</h2>
+                    <h2>
+                        <span class="deck-name-display" id="deck-name-{{ item.deck.id }}">{{ item.deck.name }}</span>
+                        <input type="text" 
+                               class="deck-name-input" 
+                               id="deck-input-{{ item.deck.id }}" 
+                               value="{{ item.deck.name }}" 
+                               style="display: none;"
+                               maxlength="200">
+                        <button class="deck-edit-btn" 
+                                id="edit-btn-{{ item.deck.id }}"
+                                onclick="enableDeckEdit({{ item.deck.id }})"
+                                title="Rename deck">✏️</button>
+                        <button class="deck-save-btn" 
+                                id="save-btn-{{ item.deck.id }}"
+                                onclick="saveDeckName({{ item.deck.id }})"
+                                style="display: none;"
+                                title="Save">💾</button>
+                        <button class="deck-cancel-btn" 
+                                id="cancel-btn-{{ item.deck.id }}"
+                                onclick="cancelDeckEdit({{ item.deck.id }})"
+                                style="display: none;"
+                                title="Cancel">✖️</button>
+                    </h2>
                     {% if item.due > 0 %}
                         <span class="badge badge-primary">{{ item.due }} due</span>
                     {% endif %}
@@ -73,4 +95,89 @@
         <a href="{{ url_for('import_deck') }}" class="btn btn-primary">Import a Deck</a>
     </div>
 {% endif %}
+
+<script>
+function enableDeckEdit(deckId) {
+    const nameDisplay = document.getElementById(`deck-name-${deckId}`);
+    const nameInput = document.getElementById(`deck-input-${deckId}`);
+    const editBtn = document.getElementById(`edit-btn-${deckId}`);
+    const saveBtn = document.getElementById(`save-btn-${deckId}`);
+    const cancelBtn = document.getElementById(`cancel-btn-${deckId}`);
+    
+    nameDisplay.style.display = 'none';
+    editBtn.style.display = 'none';
+    nameInput.style.display = 'inline-block';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+    nameInput.focus();
+    nameInput.select();
+    
+    // Save on Enter, cancel on Escape
+    nameInput.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveDeckName(deckId);
+        } else if (e.key === 'Escape') {
+            cancelDeckEdit(deckId);
+        }
+    };
+}
+
+function cancelDeckEdit(deckId) {
+    const nameDisplay = document.getElementById(`deck-name-${deckId}`);
+    const nameInput = document.getElementById(`deck-input-${deckId}`);
+    const editBtn = document.getElementById(`edit-btn-${deckId}`);
+    const saveBtn = document.getElementById(`save-btn-${deckId}`);
+    const cancelBtn = document.getElementById(`cancel-btn-${deckId}`);
+    
+    // Reset to original value
+    nameInput.value = nameDisplay.textContent;
+    
+    nameDisplay.style.display = 'inline';
+    editBtn.style.display = 'inline-block';
+    nameInput.style.display = 'none';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+}
+
+function saveDeckName(deckId) {
+    const nameDisplay = document.getElementById(`deck-name-${deckId}`);
+    const nameInput = document.getElementById(`deck-input-${deckId}`);
+    const newName = nameInput.value.trim();
+    
+    if (!newName) {
+        alert('Deck name cannot be empty');
+        nameInput.focus();
+        return;
+    }
+    
+    if (newName === nameDisplay.textContent) {
+        cancelDeckEdit(deckId);
+        return;
+    }
+    
+    // Save via API
+    fetch(`/api/deck/${deckId}/rename`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            nameDisplay.textContent = newName;
+            cancelDeckEdit(deckId);
+        } else {
+            alert(data.error || 'Failed to rename deck');
+            nameInput.focus();
+        }
+    })
+    .catch(error => {
+        alert('Error renaming deck: ' + error);
+        nameInput.focus();
+    });
+}
+</script>
 {% endblock %}

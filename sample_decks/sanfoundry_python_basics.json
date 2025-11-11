@@ -1,0 +1,142 @@
+[
+  {
+    "number": 1,
+    "question": "Is Python case sensitive when dealing with identifiers?",
+    "options": {
+      "a": "yes",
+      "b": "no",
+      "c": "machine dependent",
+      "d": "none of the mentioned"
+    },
+    "answer": "a",
+    "explanation": "Yes, Python is case sensitive. For example, Variable, variable, and VARIABLE are all treated as different identifiers.",
+    "category": "Python Basics",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-variable-names/"
+  },
+  {
+    "number": 2,
+    "question": "What is the maximum possible length of an identifier?",
+    "options": {
+      "a": "31 characters",
+      "b": "63 characters",
+      "c": "79 characters",
+      "d": "none of the mentioned"
+    },
+    "answer": "d",
+    "explanation": "In Python, identifiers can be of any length. There is no fixed maximum, though extremely long names are not practical.",
+    "category": "Python Basics",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-variable-names/"
+  },
+  {
+    "number": 3,
+    "question": "Which of the following is not allowed in Python?",
+    "options": {
+      "a": "_a = 1",
+      "b": "__a = 1",
+      "c": "__str__ = 1",
+      "d": "none of the mentioned"
+    },
+    "answer": "d",
+    "explanation": "All the given statements are valid in Python and will run without errors. However, using names like __str__ can reduce readability or interfere with built-in functionality.",
+    "category": "Python Basics",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-variable-names/"
+  },
+  {
+    "number": 4,
+    "question": "Which of the following is a Python tuple?",
+    "options": {
+      "a": "[1, 2, 3]",
+      "b": "(1, 2, 3)",
+      "c": "{1, 2, 3}",
+      "d": "all of the mentioned"
+    },
+    "answer": "b",
+    "explanation": "Tuples are defined using parentheses (). Lists use square brackets [], sets use curly braces {}.",
+    "category": "Data Structures",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-tuples/"
+  },
+  {
+    "number": 5,
+    "question": "What will be the output of print(type([]) is list)?",
+    "options": {
+      "a": "True",
+      "b": "False",
+      "c": "Error",
+      "d": "None"
+    },
+    "answer": "a",
+    "explanation": "The type() function returns the type of an object. [] creates an empty list, so type([]) is list evaluates to True.",
+    "category": "Data Structures",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-lists/"
+  },
+  {
+    "number": 6,
+    "question": "What is the output of print(bool(''))?",
+    "options": {
+      "a": "True",
+      "b": "False",
+      "c": "Error",
+      "d": "None"
+    },
+    "answer": "b",
+    "explanation": "An empty string is considered False in Python. The bool() function returns False for empty strings, empty lists, 0, None, etc.",
+    "category": "Boolean Logic",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-boolean/"
+  },
+  {
+    "number": 7,
+    "question": "Which keyword is used for function in Python language?",
+    "options": {
+      "a": "function",
+      "b": "def",
+      "c": "fun",
+      "d": "define"
+    },
+    "answer": "b",
+    "explanation": "The 'def' keyword is used to define a function in Python. For example: def my_function(): pass",
+    "category": "Functions",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-functions/"
+  },
+  {
+    "number": 8,
+    "question": "What is the output of print(2 ** 3)?",
+    "options": {
+      "a": "6",
+      "b": "8",
+      "c": "9",
+      "d": "None of the mentioned"
+    },
+    "answer": "b",
+    "explanation": "The ** operator is the exponentiation operator in Python. 2 ** 3 means 2 raised to the power of 3, which equals 8.",
+    "category": "Operators",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-operators/"
+  },
+  {
+    "number": 9,
+    "question": "Which of these is the definition for packages in Python?",
+    "options": {
+      "a": "A folder of python modules",
+      "b": "A set of main modules",
+      "c": "A number of files containing Python definitions and statements",
+      "d": "A set of programs making use of Python modules"
+    },
+    "answer": "a",
+    "explanation": "A package is a hierarchical file directory structure that defines a single Python application environment consisting of modules and subpackages.",
+    "category": "Modules and Packages",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-packages/"
+  },
+  {
+    "number": 10,
+    "question": "What is the output of print('Hello' + 'World')?",
+    "options": {
+      "a": "Hello World",
+      "b": "HelloWorld",
+      "c": "Hello+World",
+      "d": "Error"
+    },
+    "answer": "b",
+    "explanation": "The + operator concatenates strings in Python. 'Hello' + 'World' results in 'HelloWorld' with no space between them.",
+    "category": "Strings",
+    "source_url": "https://www.sanfoundry.com/python-questions-answers-strings/"
+  }
+]

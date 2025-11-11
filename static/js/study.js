@@ -127,3 +127,119 @@ if (endSessionBtn) {
         }
     });
 }
+
+// Delete card function
+let currentEditingCardId = null;
+
+function deleteCard(cardId, event) {
+    event.stopPropagation();
+    
+    if (!confirm('Are you sure you want to delete this card? This cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/api/card/${cardId}/delete`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+            cardElement.remove();
+            
+            totalCards--;
+            document.getElementById('total-cards').textContent = totalCards;
+            
+            if (totalCards === 0) {
+                endStudySession();
+            } else if (currentCardIndex >= totalCards) {
+                currentCardIndex = totalCards - 1;
+                const cards = document.querySelectorAll('.flashcard');
+                if (cards[currentCardIndex]) {
+                    cards[currentCardIndex].style.display = 'block';
+                }
+            } else {
+                const cards = document.querySelectorAll('.flashcard');
+                if (cards[currentCardIndex]) {
+                    cards[currentCardIndex].style.display = 'block';
+                }
+            }
+            
+            alert('Card deleted successfully');
+        } else {
+            alert('Failed to delete card: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete card. Please try again.');
+    });
+}
+
+function openScheduleEditor(cardId) {
+    currentEditingCardId = cardId;
+    
+    fetch(`/api/card/${cardId}/progress`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const progress = data.progress;
+            
+            document.getElementById('card-state').value = progress.state || 'new';
+            document.getElementById('interval-days').value = progress.interval || 0;
+            document.getElementById('ease-factor').value = progress.ease_factor || 2.5;
+            document.getElementById('repetitions').value = progress.repetitions || 0;
+            
+            const dueDate = progress.due_date ? new Date(progress.due_date) : new Date();
+            const formatted = dueDate.toISOString().slice(0, 16);
+            document.getElementById('next-review-date').value = formatted;
+            
+            document.getElementById('schedule-modal').style.display = 'flex';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load card progress');
+    });
+}
+
+function closeScheduleEditor() {
+    document.getElementById('schedule-modal').style.display = 'none';
+    currentEditingCardId = null;
+}
+
+function saveSchedule() {
+    if (!currentEditingCardId) return;
+    
+    const scheduleData = {
+        state: document.getElementById('card-state').value,
+        due_date: document.getElementById('next-review-date').value,
+        interval: parseInt(document.getElementById('interval-days').value),
+        ease_factor: parseFloat(document.getElementById('ease-factor').value),
+        repetitions: parseInt(document.getElementById('repetitions').value)
+    };
+    
+    fetch(`/api/card/${currentEditingCardId}/progress`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scheduleData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Schedule updated successfully!');
+            closeScheduleEditor();
+        } else {
+            alert('Failed to update schedule: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save schedule. Please try again.');
+    });
+}
