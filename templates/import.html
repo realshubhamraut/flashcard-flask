@@ -36,23 +36,37 @@
         <h2>JSON Format Examples</h2>
         
         <h3>Sanfoundry Format (Quiz Platform)</h3>
-        <p>Format from Sanfoundry quiz website</p>
+        <p>Format from Sanfoundry quiz website with code blocks support</p>
         <pre><code>[
   {
-    "number": 1,
-    "question": "Is Python case sensitive?",
+    "number": 54,
+    "question": "What will be the output of the following Python code snippet?",
     "options": {
-      "a": "yes",
-      "b": "no",
-      "c": "machine dependent",
-      "d": "none of the mentioned"
+      "a": "Error",
+      "b": "True",
+      "c": "False",
+      "d": "No output"
     },
-    "answer": "a",
-    "explanation": "Yes, Python is case sensitive.",
-    "category": "Python Basics",
-    "source_url": "https://www.sanfoundry.com/..."
+    "answer": "b",
+    "explanation": "The code shown above is used to check whether a particular item is a part of a given set or not.",
+    "code_blocks": [
+      "z=set('abc$de')\nprint('a' in z)"
+    ],
+    "category": "Python Sets",
+    "source_url": "https://www.sanfoundry.com/1000-python-questions-answers/"
+  },
+  {
+    "number": 56,
+    "question": "Which of the following is a feature of Python DocString?",
+    "options": {},
+    "answer": "d",
+    "explanation": "Python has a nifty feature called documentation strings, usually referred to by its shorter name docstrings.",
+    "code_blocks": [],
+    "category": "Python Documentation",
+    "source_url": "https://www.sanfoundry.com/1000-python-questions-answers/"
   }
 ]</code></pre>
+        <p><strong>Note:</strong> Options can be empty object {} for questions without multiple choice. Code blocks are joined with newlines.</p>
         
         <h3>Payal's Format (With Topics & Difficulty)</h3>
         <p>Extended format with topic, difficulty, and citation markers</p>
@@ -118,19 +132,29 @@
         <h3>Field Descriptions</h3>
         <ul>
             <li><strong>question</strong> - The question text (required)</li>
+            <li><strong>number</strong> - Question number (Sanfoundry format, optional)</li>
             <li><strong>topic</strong> - Topic/category (Payal's format only, optional)</li>
+            <li><strong>category</strong> - Category (Sanfoundry format, optional)</li>
             <li><strong>difficulty</strong> - Difficulty level (Payal's format only, optional)</li>
             <li><strong>hint</strong> - A helpful hint (optional)</li>
-            <li><strong>options</strong> - Array of answer choices (optional, for multiple choice)</li>
-            <li><strong>correct_answer</strong> - Can be:
+            <li><strong>options</strong> - Answer choices:
                 <ul>
-                    <li>Integer index (0, 1, 2...) for Shubham's full format</li>
-                    <li>Exact answer string for both simple formats (e.g., "3", "continue")</li>
+                    <li>Array format: ["opt1", "opt2", "opt3"] (Shubham/Payal)</li>
+                    <li>Object format: {"a": "opt1", "b": "opt2"} (Sanfoundry)</li>
+                    <li>Can be empty {} for non-multiple-choice questions</li>
                 </ul>
             </li>
-            <li><strong>description</strong> - Explanation shown after answering (optional)</li>
-            <li><strong>reference</strong> - URL or reference link (optional)</li>
+            <li><strong>answer</strong> - Answer letter (a/b/c/d) for Sanfoundry format</li>
+            <li><strong>correct_answer</strong> - For Shubham/Payal formats:
+                <ul>
+                    <li>Integer index (0, 1, 2...) for Shubham's full format</li>
+                    <li>Exact answer string for simple formats (e.g., "3", "continue")</li>
+                </ul>
+            </li>
+            <li><strong>description/explanation</strong> - Explanation shown after answering (optional)</li>
+            <li><strong>reference/source_url</strong> - URL or reference link (optional)</li>
             <li><strong>code</strong> - Code snippet to display (optional)</li>
+            <li><strong>code_blocks</strong> - Array of code snippets (Sanfoundry format, optional)</li>
         </ul>
         
         <h3>Supported Formats</h3>

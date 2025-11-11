@@ -36,6 +36,20 @@ def create_tables():
     """Create database tables before first request"""
     db.create_all()
 
+    # Lightweight migration: ensure parent_id column exists on decks table for hierarchical decks
+    # This avoids requiring Alembic for simple schema additions in development.
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    cols = [c['name'] for c in inspector.get_columns('decks')]
+    if 'parent_id' not in cols:
+        try:
+            # Add parent_id column referencing decks.id
+            db.session.execute(text('ALTER TABLE decks ADD COLUMN parent_id INTEGER REFERENCES decks(id)'))
+            db.session.commit()
+            app.logger.info('Added parent_id column to decks table')
+        except Exception as e:
+            app.logger.warning(f'Could not add parent_id column automatically: {e}')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -107,12 +121,23 @@ def logout():
 def index():
     """Home page showing all decks"""
     decks = Deck.query.filter_by(user_id=current_user.id).all()
-    
-    # Get statistics for each deck
-    deck_stats = []
-    for deck in decks:
-        stats = deck.get_stats()
-        due_count = Card.query.filter_by(deck_id=deck.id).join(
+
+    # Build parent->children mapping for hierarchical display
+    deck_map = {d.id: d for d in decks}
+    children_map = {d.id: [] for d in decks}
+    roots = []
+    for d in decks:
+        if d.parent_id and d.parent_id in deck_map:
+            children_map[d.parent_id].append(d)
+        else:
+            roots.append(d)
+
+    def build_node(deck):
+        # Aggregate stats across subdecks
+        stats = deck.get_stats(include_subdecks=True)
+        # Count due cards across the deck and its descendants
+        descendant_ids = deck._collect_descendant_ids()
+        due_count = Card.query.filter(Card.deck_id.in_(descendant_ids)).join(
             CardProgress, Card.id == CardProgress.card_id, isouter=True
         ).filter(
             db.or_(
@@ -120,14 +145,15 @@ def index():
                 CardProgress.due_date <= datetime.utcnow()
             )
         ).count()
-        
-        deck_stats.append({
-            'deck': deck,
-            'stats': stats,
-            'due': due_count
-        })
-    
-    return render_template('index.html', deck_stats=deck_stats)
+
+        node = {'deck': deck, 'stats': stats, 'due': due_count, 'children': []}
+        for child in sorted(children_map.get(deck.id, []), key=lambda x: x.name.lower()):
+            node['children'].append(build_node(child))
+        return node
+
+    deck_tree = [build_node(d) for d in sorted(roots, key=lambda x: x.name.lower())]
+
+    return render_template('index.html', deck_stats=deck_tree)
 
 
 @app.route('/deck/<int:deck_id>')
@@ -381,16 +407,27 @@ def import_deck():
                         # Filter out empty options
                         options = [opt for opt in options if opt]
                         
-                        # Convert answer letter to index
-                        letter_to_index = {'a': 0, 'b': 1, 'c': 2, 'd': 3}
-                        correct_answer_index = letter_to_index.get(answer_letter.lower(), 0)
+                        # If no options provided (empty dict), set to None
+                        if not options:
+                            options = None
+                            correct_answer_index = 0  # Default for questions without options
+                        else:
+                            # Convert answer letter to index
+                            letter_to_index = {'a': 0, 'b': 1, 'c': 2, 'd': 3}
+                            correct_answer_index = letter_to_index.get(answer_letter.lower(), 0)
                         
                         # Map sanfoundry fields to our schema
                         question = card_data.get('question', '')
                         hint = None  # Sanfoundry doesn't have hints
                         description = card_data.get('explanation', '')
                         reference = card_data.get('source_url', '')
-                        code = None  # Sanfoundry doesn't have code field
+                        
+                        # Handle code_blocks array - join multiple code blocks with newlines
+                        code_blocks = card_data.get('code_blocks', [])
+                        if code_blocks:
+                            code = '\n\n'.join(code_blocks)
+                        else:
+                            code = None
                         
                     else:
                         # Get options and clean up any [cite_start] markers for Payal's format
@@ -550,6 +587,62 @@ def rename_deck(deck_id):
         deck.name = new_name
         db.session.commit()
         return jsonify({'success': True, 'name': new_name})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/deck', methods=['POST'])
+@login_required
+def create_deck_api():
+    """Create a new deck (optionally as a subdeck)."""
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
+    parent_id = data.get('parent_id')
+
+    if not name:
+        return jsonify({'error': 'Deck name is required'}), 400
+
+    # Validate parent belongs to user (if provided)
+    if parent_id:
+        parent = Deck.query.filter_by(id=parent_id, user_id=current_user.id).first()
+        if not parent:
+            return jsonify({'error': 'Invalid parent deck'}), 400
+
+    deck = Deck(user_id=current_user.id, name=name, description=data.get('description'), parent_id=parent_id)
+    try:
+        db.session.add(deck)
+        db.session.commit()
+        return jsonify({'success': True, 'deck_id': deck.id, 'name': deck.name})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/deck/<int:deck_id>/move', methods=['PUT'])
+@login_required
+def move_deck(deck_id):
+    """Change a deck's parent (move into a folder or make top-level)."""
+    deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    data = request.json or {}
+    new_parent = data.get('parent_id')
+
+    if new_parent == deck.id:
+        return jsonify({'error': 'Cannot set deck as its own parent'}), 400
+
+    if new_parent:
+        parent = Deck.query.filter_by(id=new_parent, user_id=current_user.id).first()
+        if not parent:
+            return jsonify({'error': 'Invalid parent deck'}), 400
+        # Prevent cycles: ensure parent is not a descendant of deck
+        descendant_ids = deck._collect_descendant_ids()
+        if new_parent in descendant_ids:
+            return jsonify({'error': 'Cannot move deck into its own descendant'}), 400
+
+    deck.parent_id = new_parent
+    try:
+        db.session.commit()
+        return jsonify({'success': True, 'deck_id': deck.id, 'parent_id': deck.parent_id})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

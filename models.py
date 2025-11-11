@@ -39,16 +39,31 @@ class Deck(db.Model):
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+    # Hierarchy: support parent deck (folder) and children (subdecks)
+    parent_id = db.Column(db.Integer, db.ForeignKey('decks.id'), nullable=True)
+    parent = db.relationship('Deck', remote_side=[id], backref=db.backref('children', cascade='all, delete-orphan'))
+
     # Relationships
     cards = db.relationship('Card', backref='deck', lazy=True, cascade='all, delete-orphan')
-    
+
     def __repr__(self):
         return f'<Deck {self.name}>'
-    
-    def get_stats(self):
-        """Get statistics for this deck"""
-        total_cards = len(self.cards)
+
+    def _collect_descendant_ids(self):
+        """Return list of this deck id and all descendant deck ids."""
+        ids = [self.id]
+        # Using children relationship which is lazy-loaded
+        for child in getattr(self, 'children') or []:
+            ids.extend(child._collect_descendant_ids())
+        return ids
+
+    def get_stats(self, include_subdecks=True):
+        """Get statistics for this deck. If include_subdecks, aggregate cards from all descendants."""
+        # Gather deck ids to include
+        deck_ids = self._collect_descendant_ids() if include_subdecks else [self.id]
+
+        # Use queries to avoid loading all objects into memory
+        total_cards = Card.query.filter(Card.deck_id.in_(deck_ids)).count()
         if total_cards == 0:
             return {
                 'total': 0,
@@ -57,12 +72,15 @@ class Deck(db.Model):
                 'review': 0,
                 'mastered': 0
             }
-        
-        new = sum(1 for c in self.cards if c.progress and c.progress.state == 'new')
-        learning = sum(1 for c in self.cards if c.progress and c.progress.state == 'learning')
-        review = sum(1 for c in self.cards if c.progress and c.progress.state == 'review')
-        mastered = sum(1 for c in self.cards if c.progress and c.progress.state == 'mastered')
-        
+
+        # Count states by joining progress
+        q = db.session.query(Card).outerjoin(CardProgress, Card.id == CardProgress.card_id).filter(Card.deck_id.in_(deck_ids))
+
+        new = q.filter(CardProgress.state == 'new').count()
+        learning = q.filter(CardProgress.state == 'learning').count()
+        review = q.filter(CardProgress.state == 'review').count()
+        mastered = q.filter(CardProgress.state == 'mastered').count()
+
         return {
             'total': total_cards,
             'new': new,

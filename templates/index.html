@@ -10,71 +10,72 @@
 
 {% if deck_stats %}
     <div class="deck-grid">
-        {% for item in deck_stats %}
+        {% macro render_node(node) %}
             <div class="deck-card">
                 <div class="deck-card-header">
                     <h2>
-                        <span class="deck-name-display" id="deck-name-{{ item.deck.id }}">{{ item.deck.name }}</span>
+                        <span class="deck-name-display" id="deck-name-{{ node.deck.id }}">{{ node.deck.name }}</span>
                         <input type="text" 
                                class="deck-name-input" 
-                               id="deck-input-{{ item.deck.id }}" 
-                               value="{{ item.deck.name }}" 
+                               id="deck-input-{{ node.deck.id }}" 
+                               value="{{ node.deck.name }}" 
                                style="display: none;"
                                maxlength="200">
                         <button class="deck-edit-btn" 
-                                id="edit-btn-{{ item.deck.id }}"
-                                onclick="enableDeckEdit({{ item.deck.id }})"
+                                id="edit-btn-{{ node.deck.id }}"
+                                onclick="enableDeckEdit({{ node.deck.id }})"
                                 title="Rename deck">✏️</button>
                         <button class="deck-save-btn" 
-                                id="save-btn-{{ item.deck.id }}"
-                                onclick="saveDeckName({{ item.deck.id }})"
+                                id="save-btn-{{ node.deck.id }}"
+                                onclick="saveDeckName({{ node.deck.id }})"
                                 style="display: none;"
                                 title="Save">💾</button>
                         <button class="deck-cancel-btn" 
-                                id="cancel-btn-{{ item.deck.id }}"
-                                onclick="cancelDeckEdit({{ item.deck.id }})"
+                                id="cancel-btn-{{ node.deck.id }}"
+                                onclick="cancelDeckEdit({{ node.deck.id }})"
                                 style="display: none;"
                                 title="Cancel">✖️</button>
                     </h2>
-                    {% if item.due > 0 %}
-                        <span class="badge badge-primary">{{ item.due }} due</span>
+                    {% if node.due > 0 %}
+                        <span class="badge badge-primary">{{ node.due }} due</span>
                     {% endif %}
                 </div>
                 
-                {% if item.deck.description %}
-                    <p class="deck-description">{{ item.deck.description }}</p>
+                {% if node.deck.description %}
+                    <p class="deck-description">{{ node.deck.description }}</p>
                 {% endif %}
                 
                 <div class="deck-stats">
                     <div class="stat">
                         <span class="stat-label">Total</span>
-                        <span class="stat-value">{{ item.stats.total }}</span>
+                        <span class="stat-value">{{ node.stats.total }}</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">New</span>
-                        <span class="stat-value stat-new">{{ item.stats.new }}</span>
+                        <span class="stat-value stat-new">{{ node.stats.new }}</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">Learning</span>
-                        <span class="stat-value stat-learning">{{ item.stats.learning }}</span>
+                        <span class="stat-value stat-learning">{{ node.stats.learning }}</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">Review</span>
-                        <span class="stat-value stat-review">{{ item.stats.review }}</span>
+                        <span class="stat-value stat-review">{{ node.stats.review }}</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">Mastered</span>
-                        <span class="stat-value stat-mastered">{{ item.stats.mastered }}</span>
+                        <span class="stat-value stat-mastered">{{ node.stats.mastered }}</span>
                     </div>
                 </div>
                 
                 <div class="deck-actions">
-                    {% if item.due > 0 %}
-                        <a href="{{ url_for('study', deck_id=item.deck.id) }}" class="btn btn-primary">Study Now</a>
+                    {% if node.due > 0 %}
+                        <a href="{{ url_for('study', deck_id=node.deck.id) }}" class="btn btn-primary">Study Now</a>
                     {% else %}
-                        <a href="{{ url_for('deck_detail', deck_id=item.deck.id) }}" class="btn btn-secondary">View Details</a>
+                        <a href="{{ url_for('deck_detail', deck_id=node.deck.id) }}" class="btn btn-secondary">View Details</a>
                     {% endif %}
-                    <form method="POST" action="{{ url_for('delete_deck', deck_id=item.deck.id) }}" 
+                    <button class="btn btn-secondary btn-sm" onclick="createSubdeck({{ node.deck.id }})">+ Subdeck</button>
+                    <form method="POST" action="{{ url_for('delete_deck', deck_id=node.deck.id) }}" 
                           style="display: inline;"
                           onsubmit="return confirm('Are you sure you want to delete this deck?');">
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
@@ -82,9 +83,21 @@
                 </div>
                 
                 <div class="deck-meta">
-                    Created {{ item.deck.created_at|timeago }}
+                    Created {{ node.deck.created_at|timeago }}
                 </div>
+
+                {% if node.children %}
+                    <div class="deck-children">
+                        {% for child in node.children %}
+                            {{ render_node(child) }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
+        {% endmacro %}
+
+        {% for node in deck_stats %}
+            {{ render_node(node) }}
         {% endfor %}
     </div>
 {% else %}
@@ -178,6 +191,27 @@ function saveDeckName(deckId) {
         alert('Error renaming deck: ' + error);
         nameInput.focus();
     });
+}
+
+function createSubdeck(parentId) {
+    const name = prompt('Enter name for the new subdeck:');
+    if (!name) return;
+
+    fetch('/api/deck', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), parent_id: parentId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Reload to show new subdeck for simplicity
+            location.reload();
+        } else {
+            alert(data.error || 'Could not create subdeck');
+        }
+    })
+    .catch(err => alert('Error: ' + err));
 }
 </script>
 {% endblock %}

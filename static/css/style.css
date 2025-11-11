@@ -166,6 +166,15 @@ main {
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
+/* Mobile menu toggle button (hidden on desktop) */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
     text-decoration: none;
     transition: all 0.3s;
     font-family: var(--font-ui);
@@ -1568,4 +1577,38 @@ main {
 
 .auth-footer a:hover {
     text-decoration: underline;
+}
+
+/* Additional mobile/touch improvements */
+.rating-btn {
+    min-width: 80px;
+    padding: 0.6rem 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .rating-btn {
+        min-width: 64px;
+        padding: 0.5rem 0.6rem;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .rating-btn {
+        min-width: 56px;
+        padding: 0.45rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    .deck-card {
+        padding: 0.75rem;
+    }
+    .deck-card-header h2 {
+        font-size: 1.125rem;
+    }
+    .deck-children {
+        margin-left: 0.5rem;
+        border-left: 2px dashed var(--border);
+        padding-left: 0.75rem;
+        margin-top: 0.75rem;
+    }
 }

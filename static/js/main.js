@@ -18,6 +18,15 @@ if (themeToggle) {
     });
 }
 
+// Mobile menu toggle
+const mobileToggle = document.getElementById('mobile-menu-toggle');
+const navLinks = document.querySelector('.nav-links');
+if (mobileToggle && navLinks) {
+    mobileToggle.addEventListener('click', function() {
+        navLinks.classList.toggle('open');
+    });
+}
+
 function updateThemeIcon(theme) {
     if (themeIcon) {
         themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
