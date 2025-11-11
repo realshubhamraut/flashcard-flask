@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Study - {{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="study-container">
+    <div class="study-header">
+        <div class="study-progress">
+            <span id="current-card">1</span> / <span id="total-cards">{{ cards|length }}</span>
+        </div>
+        <h2>{{ deck.name }}</h2>
+        <button id="end-session" class="btn btn-secondary btn-sm">End Session</button>
+    </div>
+
+    <div id="card-container">
+        {% for card in cards %}
+            <div class="flashcard" data-card-id="{{ card.id }}" data-index="{{ loop.index }}" 
+                 style="{% if loop.index != 1 %}display: none;{% endif %}">
+                
+                <div class="card-question">
+                    <h3>{{ card.question }}</h3>
+                </div>
+                
+                {% if card.hint %}
+                    <div class="card-hint">
+                        <button class="hint-toggle" onclick="toggleHint(this)">💡 Show Hint</button>
+                        <div class="hint-content" style="display: none;">
+                            {{ card.hint }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if card.code %}
+                    <div class="code-block">
+                        <pre><code class="language-python">{{ card.code }}</code></pre>
+                    </div>
+                {% endif %}
+                
+                {% if card.options %}
+                    <div class="options">
+                        {% for option in card.options %}
+                            <button class="option-btn" data-index="{{ loop.index0 }}" 
+                                    onclick="selectAnswer(this, {{ card.id }}, {{ card.correct_answer }})">
+                                <span class="option-letter">{{ 'ABCD'[loop.index0] }}</span>
+                                <span class="option-text">{{ option }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="show-answer">
+                        <button class="btn btn-primary" onclick="showAnswer({{ card.id }})">Show Answer</button>
+                    </div>
+                {% endif %}
+                
+                <div class="explanation-section" id="explanation-{{ card.id }}" style="display: none;">
+                    {% if card.description %}
+                        <div class="card-description">
+                            <h4>Explanation</h4>
+                            <p>{{ card.description }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if card.reference %}
+                        <div class="card-reference">
+                            <strong>Reference:</strong> 
+                            <a href="{{ card.reference }}" target="_blank">{{ card.reference }}</a>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="rating-buttons">
+                        <div class="rating-grid">
+                            <button class="rating-btn rating-again" onclick="rateCard({{ card.id }}, 'again')">
+                                <span class="rating-label">Again</span>
+                                <span class="rating-time">&lt;10m</span>
+                            </button>
+                            <button class="rating-btn rating-hard" onclick="rateCard({{ card.id }}, 'hard')">
+                                <span class="rating-label">Hard</span>
+                                <span class="rating-time">1d</span>
+                            </button>
+                            <button class="rating-btn rating-good" onclick="rateCard({{ card.id }}, 'good')">
+                                <span class="rating-label">Good</span>
+                                <span class="rating-time">3d</span>
+                            </button>
+                            <button class="rating-btn rating-easy" onclick="rateCard({{ card.id }}, 'easy')">
+                                <span class="rating-label">Easy</span>
+                                <span class="rating-time">7d</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div id="session-complete" style="display: none;">
+        <div class="complete-icon">🎉</div>
+        <h2>Session Complete!</h2>
+        <p>Great work! You've reviewed <span id="cards-reviewed">0</span> cards.</p>
+        <div class="complete-actions">
+            <a href="{{ url_for('deck_detail', deck_id=deck.id) }}" class="btn btn-primary">Back to Deck</a>
+            <a href="{{ url_for('stats') }}" class="btn btn-secondary">View Statistics</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sessionId = {{ session_id }};
+    const deckId = {{ deck.id }};
+    let currentCardIndex = 0;
+    let totalCards = {{ cards|length }};
+    let cardsReviewed = 0;
+    let startTime = Date.now();
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/study.js') }}"></script>
+{% endblock %}

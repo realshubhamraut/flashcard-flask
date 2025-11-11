@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ deck.name }} - Deck Details{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ deck.name }}</h1>
+</div>
+
+{% if deck.description %}
+    <p class="deck-description-large">{{ deck.description }}</p>
+{% endif %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">🃏</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">Total Cards</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">🆕</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ stats.new }}</div>
+            <div class="stat-label">New Cards</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">📖</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ stats.learning }}</div>
+            <div class="stat-label">Learning</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ stats.review }}</div>
+            <div class="stat-label">Review</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ stats.mastered }}</div>
+            <div class="stat-label">Mastered</div>
+        </div>
+    </div>
+    
+    <div class="stat-card stat-card-highlight">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ due_count }}</div>
+            <div class="stat-label">Due for Review</div>
+        </div>
+    </div>
+</div>
+
+<div class="deck-actions-large">
+    {% if due_count > 0 %}
+        <a href="{{ url_for('study', deck_id=deck.id) }}" class="btn btn-primary btn-lg">
+            Study {{ due_count }} Card{{ 's' if due_count != 1 else '' }}
+        </a>
+    {% else %}
+        <div class="info-message">
+            <p>✅ All cards are up to date! Check back later for reviews.</p>
+        </div>
+    {% endif %}
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Decks</a>
+</div>
+
+<div class="deck-info">
+    <p><strong>Created:</strong> {{ deck.created_at|timeago }}</p>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Your Statistics</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_decks }}</div>
+            <div class="stat-label">Total Decks</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">🃏</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_cards }}</div>
+            <div class="stat-label">Total Cards</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ today_reviews }}</div>
+            <div class="stat-label">Reviews Today</div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ today_accuracy }}%</div>
+            <div class="stat-label">Today's Accuracy</div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-container">
+    <h2>Review History (Last 30 Days)</h2>
+    <canvas id="reviewChart"></canvas>
+</div>
+
+<div class="recent-sessions">
+    <h2>Recent Study Sessions</h2>
+    {% if recent_sessions %}
+        <table class="sessions-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Cards Studied</th>
+                    <th>Accuracy</th>
+                    <th>Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in recent_sessions %}
+                    <tr>
+                        <td>{{ session.started_at|timeago }}</td>
+                        <td>{{ session.cards_studied }}</td>
+                        <td>
+                            <span class="accuracy-badge {% if session.accuracy >= 80 %}accuracy-high{% elif session.accuracy >= 60 %}accuracy-medium{% else %}accuracy-low{% endif %}">
+                                {{ session.accuracy }}%
+                            </span>
+                        </td>
+                        <td>
+                            {% if session.ended_at %}
+                                {{ ((session.ended_at - session.started_at).total_seconds() / 60)|round(1) }} min
+                            {% else %}
+                                In progress
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>No study sessions yet. Start studying to see your progress!</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    const reviewData = {{ review_chart_data|tojson }};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+{% endblock %}

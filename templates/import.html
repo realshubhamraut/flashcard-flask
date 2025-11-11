@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Import Deck{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Import Deck</h1>
+</div>
+
+<div class="import-container">
+    <div class="import-form">
+        <h2>Upload JSON File</h2>
+        <p>Import a deck from a JSON file. See the format example below.</p>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="format_type">Who created this deck?</label>
+                <select id="format_type" name="format_type" required>
+                    <option value="shubham">Shubham's Format (Standard)</option>
+                    <option value="payal">Payal's Format (With topics & difficulty)</option>
+                </select>
+                <small>Choose based on who created the JSON file</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="file">Choose JSON file</label>
+                <input type="file" id="file" name="file" accept=".json" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Import Deck</button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+    <div class="format-example">
+        <h2>JSON Format Examples</h2>
+        
+        <h3>Payal's Format (With Topics & Difficulty)</h3>
+        <p>Extended format with topic, difficulty, and citation markers</p>
+        <pre><code>[
+  {
+    "question": "What is the output of the following code?",
+    "topic": "Python Basics",
+    "difficulty": "Easy",
+    "hint": "Check how range works with step.",
+    "code": "print(len(list(range(1, 6, 2))))",
+    "options": ["1", "2", "3", "Error"],
+    "correct_answer": "3",
+    "description": "range(1, 6, 2) yields 1, 3, 5; len is 3.",
+    "reference": "https://docs.python.org/3/"
+  }
+]</code></pre>
+        
+        <h3>Shubham's Format - Simple Array</h3>
+        <p>Direct array of cards - deck name is derived from filename</p>
+        <pre><code>[
+  {
+    "question": "What is the output?",
+    "code": "print(len(list(range(1, 6, 2))))",
+    "hint": "Check how range works with step.",
+    "options": ["1", "2", "3", "Error"],
+    "correct_answer": "3",
+    "description": "range(1, 6, 2) yields 1, 3, 5; len is 3.",
+    "reference": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "question": "Which keyword skips to next iteration?",
+    "hint": "break exits; continue skips.",
+    "options": ["break", "continue", "pass", "skip"],
+    "correct_answer": "continue",
+    "description": "continue jumps to next iteration.",
+    "reference": ""
+  }
+]</code></pre>
+        
+        <h3>Shubham's Format - Full Deck Object</h3>
+        <p>Complete deck with metadata</p>
+        <pre><code>{
+  "name": "Python Basics",
+  "description": "Fundamental Python concepts",
+  "cards": [
+    {
+      "question": "What is a list in Python?",
+      "hint": "It's a built-in data structure",
+      "options": [
+        "A key-value pair structure",
+        "An ordered collection of items",
+        "A function decorator",
+        "A class attribute"
+      ],
+      "correct_answer": 1,
+      "description": "A list is an ordered, mutable collection...",
+      "reference": "https://docs.python.org/3/tutorial/datastructures.html",
+      "code": "my_list = [1, 2, 3]\nprint(my_list[0])"
+    }
+  ]
+}</code></pre>
+        
+        <h3>Field Descriptions</h3>
+        <ul>
+            <li><strong>question</strong> - The question text (required)</li>
+            <li><strong>topic</strong> - Topic/category (Payal's format only, optional)</li>
+            <li><strong>difficulty</strong> - Difficulty level (Payal's format only, optional)</li>
+            <li><strong>hint</strong> - A helpful hint (optional)</li>
+            <li><strong>options</strong> - Array of answer choices (optional, for multiple choice)</li>
+            <li><strong>correct_answer</strong> - Can be:
+                <ul>
+                    <li>Integer index (0, 1, 2...) for Shubham's full format</li>
+                    <li>Exact answer string for both simple formats (e.g., "3", "continue")</li>
+                </ul>
+            </li>
+            <li><strong>description</strong> - Explanation shown after answering (optional)</li>
+            <li><strong>reference</strong> - URL or reference link (optional)</li>
+            <li><strong>code</strong> - Code snippet to display (optional)</li>
+        </ul>
+        
+        <h3>Supported Formats</h3>
+        <ul>
+            <li><strong>Payal's Format:</strong> Array with topic, difficulty, and citation markers (cleaned automatically).</li>
+            <li><strong>Shubham's Simple Array:</strong> Just an array of card objects. Deck name comes from filename.</li>
+            <li><strong>Shubham's Full Object:</strong> Object with "name", "description", and "cards" array.</li>
+            <li><strong>correct_answer:</strong> Can be index number or exact string matching an option.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

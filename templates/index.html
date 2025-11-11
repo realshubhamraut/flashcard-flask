@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Flashcard App{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Your Decks</h1>
+    <a href="{{ url_for('import_deck') }}" class="btn btn-primary">+ Import Deck</a>
+</div>
+
+{% if deck_stats %}
+    <div class="deck-grid">
+        {% for item in deck_stats %}
+            <div class="deck-card">
+                <div class="deck-card-header">
+                    <h2>{{ item.deck.name }}</h2>
+                    {% if item.due > 0 %}
+                        <span class="badge badge-primary">{{ item.due }} due</span>
+                    {% endif %}
+                </div>
+                
+                {% if item.deck.description %}
+                    <p class="deck-description">{{ item.deck.description }}</p>
+                {% endif %}
+                
+                <div class="deck-stats">
+                    <div class="stat">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value">{{ item.stats.total }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">New</span>
+                        <span class="stat-value stat-new">{{ item.stats.new }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Learning</span>
+                        <span class="stat-value stat-learning">{{ item.stats.learning }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Review</span>
+                        <span class="stat-value stat-review">{{ item.stats.review }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Mastered</span>
+                        <span class="stat-value stat-mastered">{{ item.stats.mastered }}</span>
+                    </div>
+                </div>
+                
+                <div class="deck-actions">
+                    {% if item.due > 0 %}
+                        <a href="{{ url_for('study', deck_id=item.deck.id) }}" class="btn btn-primary">Study Now</a>
+                    {% else %}
+                        <a href="{{ url_for('deck_detail', deck_id=item.deck.id) }}" class="btn btn-secondary">View Details</a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('delete_deck', deck_id=item.deck.id) }}" 
+                          style="display: inline;"
+                          onsubmit="return confirm('Are you sure you want to delete this deck?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </div>
+                
+                <div class="deck-meta">
+                    Created {{ item.deck.created_at|timeago }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📚</div>
+        <h2>No decks yet</h2>
+        <p>Import your first deck to get started with spaced repetition learning!</p>
+        <a href="{{ url_for('import_deck') }}" class="btn btn-primary">Import a Deck</a>
+    </div>
+{% endif %}
+{% endblock %}
