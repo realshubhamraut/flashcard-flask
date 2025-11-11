@@ -1,24 +1,10 @@
-services:
-  # PostgreSQL Database
-  - type: pserv
-    name: flashcard-db
-    env: docker
+databases:
+  - name: flashcard-db
+    databaseName: flashcards
+    user: flashcard_user
     plan: free
-    image:
-      url: postgres:15
-    disk:
-      name: flashcard-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 1
-    envVars:
-      - key: POSTGRES_DB
-        value: flashcards
-      - key: POSTGRES_USER
-        value: flashcard_user
-      - key: POSTGRES_PASSWORD
-        generateValue: true
 
-  # Web Service
+services:
   - type: web
     name: flashcard-flask
     env: python
