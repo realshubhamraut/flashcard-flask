@@ -20,14 +20,14 @@
                 <button class="card-delete-btn" onclick="deleteCard({{ card.id }}, event)" title="Delete this card">×</button>
                 
                 <div class="card-question">
-                    <h3>{{ card.question }}</h3>
+                    <h3>{{ card.question | e }}</h3>
                 </div>
                 
                 {% if card.hint %}
                     <div class="card-hint">
                         <button class="hint-toggle" onclick="toggleHint(this)">💡 Show Hint</button>
                         <div class="hint-content" style="display: none;">
-                            {{ card.hint }}
+                            {{ card.hint | e }}
                         </div>
                     </div>
                 {% endif %}
@@ -44,7 +44,7 @@
                             <button class="option-btn" data-index="{{ loop.index0 }}" 
                                     onclick="selectAnswer(this, {{ card.id }}, {{ card.correct_answer }})">
                                 <span class="option-letter">{{ 'ABCD'[loop.index0] }}</span>
-                                <span class="option-text">{{ option }}</span>
+                                <span class="option-text">{{ option | e }}</span>
                             </button>
                         {% endfor %}
                     </div>
@@ -58,7 +58,7 @@
                     {% if card.description %}
                         <div class="card-description">
                             <h4>Explanation</h4>
-                            <p>{{ card.description }}</p>
+                            <p>{{ card.description | e }}</p>
                         </div>
                     {% endif %}
                     

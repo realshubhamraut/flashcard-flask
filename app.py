@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import func
 
 from config import Config
-from models import db, User, Deck, Card, CardProgress, Review, StudySession
+from models import db, User, Deck, Card, CardProgress, Review, StudySession, SpacedRepetitionSettings
 from spaced_repetition import SpacedRepetition
 
 app = Flask(__name__)
@@ -397,15 +397,13 @@ def import_deck():
                         options_dict = card_data.get('options', {})
                         answer_letter = card_data.get('answer', '')
                         
-                        # Convert options dict to array
-                        options = [
-                            options_dict.get('a', ''),
-                            options_dict.get('b', ''),
-                            options_dict.get('c', ''),
-                            options_dict.get('d', '')
-                        ]
-                        # Filter out empty options
-                        options = [opt for opt in options if opt]
+                        # Convert options dict to array - preserve order for letter mapping
+                        # Don't filter empty options to maintain a->0, b->1, c->2, d->3 mapping
+                        options = []
+                        for letter in ['a', 'b', 'c', 'd']:
+                            opt_text = options_dict.get(letter, '')
+                            if opt_text:  # Only add non-empty options
+                                options.append(opt_text)
                         
                         # If no options provided (empty dict), set to None
                         if not options:
@@ -413,7 +411,13 @@ def import_deck():
                             correct_answer_index = 0  # Default for questions without options
                         else:
                             # Convert answer letter to index
-                            letter_to_index = {'a': 0, 'b': 1, 'c': 2, 'd': 3}
+                            # Need to find the actual index in our filtered options list
+                            letter_to_index = {}
+                            idx = 0
+                            for letter in ['a', 'b', 'c', 'd']:
+                                if options_dict.get(letter, ''):
+                                    letter_to_index[letter] = idx
+                                    idx += 1
                             correct_answer_index = letter_to_index.get(answer_letter.lower(), 0)
                         
                         # Map sanfoundry fields to our schema
@@ -552,6 +556,36 @@ def stats():
                          today_accuracy=today_accuracy,
                          review_chart_data=review_chart_data,
                          recent_sessions=recent_sessions)
+
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    """Spaced repetition settings page"""
+    user_settings = SpacedRepetitionSettings.get_or_create(current_user.id)
+    
+    if request.method == 'POST':
+        try:
+            # Update settings from form
+            user_settings.interval_multiplier = float(request.form.get('interval_multiplier', 1.0))
+            user_settings.again_minutes = int(request.form.get('again_minutes', 10))
+            user_settings.hard_multiplier = float(request.form.get('hard_multiplier', 1.2))
+            user_settings.good_days = int(request.form.get('good_days', 1))
+            user_settings.easy_multiplier = float(request.form.get('easy_multiplier', 4.0))
+            user_settings.starting_ease = float(request.form.get('starting_ease', 2.5))
+            user_settings.easy_bonus = float(request.form.get('easy_bonus', 1.3))
+            user_settings.hard_penalty = float(request.form.get('hard_penalty', 0.8))
+            user_settings.graduating_interval = int(request.form.get('graduating_interval', 1))
+            user_settings.easy_interval = int(request.form.get('easy_interval', 4))
+            
+            db.session.commit()
+            flash('Settings saved successfully!', 'success')
+            return redirect(url_for('settings'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error saving settings: {str(e)}', 'error')
+    
+    return render_template('settings.html', settings=user_settings)
 
 
 @app.route('/deck/<int:deck_id>/delete', methods=['POST'])

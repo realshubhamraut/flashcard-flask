@@ -179,3 +179,48 @@ class StudySession(db.Model):
         if self.cards_studied == 0:
             return 0
         return round((self.cards_correct / self.cards_studied) * 100, 1)
+
+
+class SpacedRepetitionSettings(db.Model):
+    """User-specific spaced repetition settings"""
+    __tablename__ = 'sr_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
+    
+    # Multiplier for all intervals (1.0 = normal, 2.0 = double intervals, 0.5 = half intervals)
+    interval_multiplier = db.Column(db.Float, default=1.0)
+    
+    # Base intervals in minutes/days
+    again_minutes = db.Column(db.Integer, default=10)  # <10m by default
+    hard_multiplier = db.Column(db.Float, default=1.2)  # Hard = Good * 1.2
+    good_days = db.Column(db.Integer, default=1)  # 1 day default for new cards
+    easy_multiplier = db.Column(db.Float, default=4.0)  # Easy = Good * 4
+    
+    # Ease factor settings
+    starting_ease = db.Column(db.Float, default=2.5)
+    easy_bonus = db.Column(db.Float, default=1.3)  # Multiplier for ease on "easy"
+    hard_penalty = db.Column(db.Float, default=0.8)  # Multiplier for ease on "hard"
+    
+    # Graduating intervals
+    graduating_interval = db.Column(db.Integer, default=1)  # Days
+    easy_interval = db.Column(db.Integer, default=4)  # Days
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref=db.backref('sr_settings', uselist=False))
+    
+    def __repr__(self):
+        return f'<SRSettings user_id={self.user_id} multiplier={self.interval_multiplier}>'
+    
+    @staticmethod
+    def get_or_create(user_id):
+        """Get settings for user or create default settings"""
+        settings = SpacedRepetitionSettings.query.filter_by(user_id=user_id).first()
+        if not settings:
+            settings = SpacedRepetitionSettings(user_id=user_id)
+            db.session.add(settings)
+            db.session.commit()
+        return settings
