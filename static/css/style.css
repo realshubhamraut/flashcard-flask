@@ -866,12 +866,16 @@ main {
     padding: 1.25rem;
     overflow-x: auto;
     border-radius: 8px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .code-block code {
     font-family: var(--font-code);
     font-size: 1.05rem;
     line-height: 1.7;
+    white-space: pre;
+    display: block;
 }
 
 /* Override highlight.js theme for better readability */
