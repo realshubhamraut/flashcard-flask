@@ -741,17 +741,8 @@ def delete_deck(deck_id):
     deck_name = deck.name
     
     try:
-        # Delete all subdecks first (recursive)
-        def delete_deck_recursive(deck_to_delete):
-            # Get all children and delete them first
-            children = Deck.query.filter_by(parent_id=deck_to_delete.id).all()
-            for child in children:
-                delete_deck_recursive(child)
-            
-            # Now delete this deck (cards will cascade automatically)
-            db.session.delete(deck_to_delete)
-        
-        delete_deck_recursive(deck)
+        # Delete deck - cascade will handle subdecks, cards, and study sessions
+        db.session.delete(deck)
         db.session.commit()
         
         flash(f'Deck "{deck_name}" deleted successfully', 'success')

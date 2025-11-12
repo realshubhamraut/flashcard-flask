@@ -45,6 +45,7 @@ class Deck(db.Model):
 
     # Relationships
     cards = db.relationship('Card', backref='deck', lazy=True, cascade='all, delete-orphan')
+    study_sessions = db.relationship('StudySession', backref='deck', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Deck {self.name}>'
@@ -163,7 +164,7 @@ class StudySession(db.Model):
     __tablename__ = 'study_sessions'
     
     id = db.Column(db.Integer, primary_key=True)
-    deck_id = db.Column(db.Integer, db.ForeignKey('decks.id'))
+    deck_id = db.Column(db.Integer, db.ForeignKey('decks.id', ondelete='CASCADE'))
     
     cards_studied = db.Column(db.Integer, default=0)
     cards_correct = db.Column(db.Integer, default=0)
