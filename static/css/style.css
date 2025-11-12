@@ -227,6 +227,301 @@ main {
     margin-bottom: 2rem;
 }
 
+/* Minimal Anki-style deck list */
+.deck-list-container {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.deck-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-ui);
+}
+
+.deck-table thead {
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border);
+}
+
+.deck-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.deck-table th.deck-name-col {
+    width: auto;
+}
+
+.deck-table th.stat-col {
+    width: 80px;
+    text-align: center;
+}
+
+.deck-table th.actions-col {
+    width: 180px;
+    text-align: right;
+}
+
+.deck-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.15s;
+    cursor: move;
+}
+
+.deck-table tbody tr:hover {
+    background: var(--bg-secondary);
+}
+
+.deck-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.deck-table tbody tr.dragging {
+    opacity: 0.5;
+    background: var(--accent-primary);
+    color: white;
+}
+
+.deck-table tbody tr.drag-over {
+    background: var(--bg-tertiary);
+    border-top: 2px solid var(--accent-primary);
+}
+
+.deck-table td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+}
+
+.deck-name-cell {
+    font-size: 0.95rem;
+}
+
+.deck-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: var(--text-secondary);
+    opacity: 0.4;
+    transition: opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.deck-row:hover .drag-handle {
+    opacity: 0.8;
+}
+
+.collapse-toggle {
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.collapse-toggle:hover {
+    color: var(--accent-primary);
+}
+
+.collapse-placeholder {
+    width: 12px;
+    display: inline-block;
+}
+
+.deck-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+    flex: 1;
+}
+
+.deck-link:hover {
+    color: var(--accent-primary);
+}
+
+.deck-name-input {
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+    padding: 0.25rem 0.5rem;
+    border: 2px solid var(--accent-primary);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+    width: 250px;
+}
+
+.deck-edit-icon,
+.deck-save-icon,
+.deck-cancel-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    opacity: 0.5;
+    transition: opacity 0.2s, transform 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.deck-edit-icon:hover,
+.deck-save-icon:hover,
+.deck-cancel-icon:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.deck-edit-icon svg,
+.deck-save-icon svg,
+.deck-cancel-icon svg {
+    display: block;
+}
+
+.deck-save-icon {
+    color: var(--success);
+}
+
+.deck-cancel-icon {
+    color: var(--error);
+}
+
+.stat-cell {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.stat-cell.stat-new {
+    color: #2196F3;
+}
+
+.stat-cell.stat-learning {
+    color: #FF9800;
+}
+
+.stat-cell.stat-due {
+    color: #4CAF50;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .stat-cell.stat-new {
+    color: #42A5F5;
+}
+
+[data-theme="dark"] .stat-cell.stat-learning {
+    color: #FFA726;
+}
+
+[data-theme="dark"] .stat-cell.stat-due {
+    color: #66BB6A;
+}
+
+.actions-cell {
+    text-align: right;
+}
+
+.deck-actions-minimal {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.btn-study {
+    padding: 0.4rem 1rem;
+    background: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.btn-study:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
+}
+
+.btn-icon {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon svg {
+    display: block;
+}
+
+.btn-icon:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.btn-icon.btn-delete:hover {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .deck-table th.stat-col,
+    .deck-table td.stat-cell {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.85rem;
+    }
+    
+    .deck-table th.actions-col,
+    .deck-table td.actions-cell {
+        width: 120px;
+    }
+    
+    .btn-study {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .btn-icon {
+        padding: 0.35rem 0.5rem;
+    }
+    
+    .deck-name-wrapper {
+        gap: 0.35rem;
+    }
+}
+
 .deck-card {
     background: var(--bg-primary);
     border-radius: 12px;
@@ -562,12 +857,13 @@ main {
     margin: 1.5rem 0;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
 }
 
 .code-block pre {
     margin: 0;
-    padding: 1.5rem;
+    padding: 1.25rem;
     overflow-x: auto;
     border-radius: 8px;
 }
@@ -902,6 +1198,38 @@ main {
 #reviewChart {
     width: 100%;
     height: 300px;
+}
+
+#retentionChart {
+    width: 100%;
+    height: 350px;
+}
+
+.chart-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.retention-legend {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+    justify-content: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.legend-color {
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
 }
 
 /* Sessions table */

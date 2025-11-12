@@ -9,100 +9,136 @@
 </div>
 
 {% if deck_stats %}
-    <div class="deck-grid">
-        {% macro render_node(node) %}
-            <div class="deck-card">
-                <div class="deck-card-header">
-                    <h2>
-                        <span class="deck-name-display" id="deck-name-{{ node.deck.id }}">{{ node.deck.name }}</span>
-                        <input type="text" 
-                               class="deck-name-input" 
-                               id="deck-input-{{ node.deck.id }}" 
-                               value="{{ node.deck.name }}" 
-                               style="display: none;"
-                               maxlength="200">
-                        <button class="deck-edit-btn" 
-                                id="edit-btn-{{ node.deck.id }}"
-                                onclick="enableDeckEdit({{ node.deck.id }})"
-                                title="Rename deck">✏️</button>
-                        <button class="deck-save-btn" 
-                                id="save-btn-{{ node.deck.id }}"
-                                onclick="saveDeckName({{ node.deck.id }})"
-                                style="display: none;"
-                                title="Save">💾</button>
-                        <button class="deck-cancel-btn" 
-                                id="cancel-btn-{{ node.deck.id }}"
-                                onclick="cancelDeckEdit({{ node.deck.id }})"
-                                style="display: none;"
-                                title="Cancel">✖️</button>
-                    </h2>
-                    {% if node.due > 0 %}
-                        <span class="badge badge-primary">{{ node.due }} due</span>
-                    {% endif %}
-                </div>
-                
-                {% if node.deck.description %}
-                    <p class="deck-description">{{ node.deck.description }}</p>
-                {% endif %}
-                
-                <div class="deck-stats">
-                    <div class="stat">
-                        <span class="stat-label">Total</span>
-                        <span class="stat-value">{{ node.stats.total }}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">New</span>
-                        <span class="stat-value stat-new">{{ node.stats.new }}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Learning</span>
-                        <span class="stat-value stat-learning">{{ node.stats.learning }}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Review</span>
-                        <span class="stat-value stat-review">{{ node.stats.review }}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Mastered</span>
-                        <span class="stat-value stat-mastered">{{ node.stats.mastered }}</span>
-                    </div>
-                </div>
-                
-                <div class="deck-actions">
-                    {% if node.due > 0 %}
-                        <a href="{{ url_for('study', deck_id=node.deck.id) }}" class="btn btn-primary">Study Now</a>
-                    {% else %}
-                        <a href="{{ url_for('deck_detail', deck_id=node.deck.id) }}" class="btn btn-secondary">View Details</a>
-                    {% endif %}
-                    <button class="btn btn-secondary btn-sm" onclick="createSubdeck({{ node.deck.id }})">+ Subdeck</button>
-                    <form method="POST" action="{{ url_for('delete_deck', deck_id=node.deck.id) }}" 
-                          style="display: inline;"
-                          onsubmit="return confirm('Are you sure you want to delete this deck?');">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </div>
-                
-                <div class="deck-meta">
-                    Created {{ node.deck.created_at|timeago }}
-                </div>
-
-                {% if node.children %}
-                    <div class="deck-children">
+    <div class="deck-list-container">
+        <table class="deck-table">
+            <thead>
+                <tr>
+                    <th class="deck-name-col">Deck</th>
+                    <th class="stat-col stat-new">New</th>
+                    <th class="stat-col stat-learning">Learn</th>
+                    <th class="stat-col stat-due">Due</th>
+                    <th class="actions-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% macro render_row(node, level=0) %}
+                    <tr class="deck-row" 
+                        data-deck-id="{{ node.deck.id }}" 
+                        data-level="{{ level }}"
+                        draggable="true"
+                        ondragstart="handleDragStart(event, {{ node.deck.id }})"
+                        ondragover="handleDragOver(event)"
+                        ondrop="handleDrop(event, {{ node.deck.id }})"
+                        ondragleave="handleDragLeave(event)"
+                        ondragend="handleDragEnd(event)">
+                        <td class="deck-name-cell">
+                            <div class="deck-name-wrapper" style="padding-left: {{ level * 30 }}px;">
+                                <span class="drag-handle" title="Drag to reorder">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <circle cx="5" cy="4" r="1.5"/>
+                                        <circle cx="11" cy="4" r="1.5"/>
+                                        <circle cx="5" cy="8" r="1.5"/>
+                                        <circle cx="11" cy="8" r="1.5"/>
+                                        <circle cx="5" cy="12" r="1.5"/>
+                                        <circle cx="11" cy="12" r="1.5"/>
+                                    </svg>
+                                </span>
+                                
+                                {% if node.children %}
+                                    <span class="collapse-toggle" onclick="toggleDeck({{ node.deck.id }})">
+                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M4 6l4 4 4-4z"/>
+                                        </svg>
+                                    </span>
+                                {% else %}
+                                    <span class="collapse-placeholder"></span>
+                                {% endif %}
+                                
+                                <a href="{{ url_for('deck_detail', deck_id=node.deck.id) }}" class="deck-link">
+                                    <span class="deck-name-display" id="deck-name-{{ node.deck.id }}">{{ node.deck.name }}</span>
+                                </a>
+                                
+                                <input type="text" 
+                                       class="deck-name-input" 
+                                       id="deck-input-{{ node.deck.id }}" 
+                                       value="{{ node.deck.name }}" 
+                                       style="display: none;"
+                                       maxlength="200">
+                                
+                                <button class="deck-edit-icon" 
+                                        id="edit-btn-{{ node.deck.id }}"
+                                        onclick="enableDeckEdit({{ node.deck.id }}); event.stopPropagation();"
+                                        title="Rename">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                    </svg>
+                                </button>
+                                <button class="deck-save-icon" 
+                                        id="save-btn-{{ node.deck.id }}"
+                                        onclick="saveDeckName({{ node.deck.id }}); event.stopPropagation();"
+                                        style="display: none;"
+                                        title="Save">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                                    </svg>
+                                </button>
+                                <button class="deck-cancel-icon" 
+                                        id="cancel-btn-{{ node.deck.id }}"
+                                        onclick="cancelDeckEdit({{ node.deck.id }}); event.stopPropagation();"
+                                        style="display: none;"
+                                        title="Cancel">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="stat-cell stat-new">{{ node.stats.new }}</td>
+                        <td class="stat-cell stat-learning">{{ node.stats.learning }}</td>
+                        <td class="stat-cell stat-due">{{ node.due }}</td>
+                        <td class="actions-cell">
+                            <div class="deck-actions-minimal">
+                                {% if node.due > 0 %}
+                                    <a href="{{ url_for('study', deck_id=node.deck.id) }}" class="btn-study" title="Study Now">Study</a>
+                                {% endif %}
+                                <button class="btn-icon" onclick="createSubdeck({{ node.deck.id }}); event.stopPropagation();" title="Add subdeck">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                    </svg>
+                                </button>
+                                <form method="POST" action="{{ url_for('delete_deck', deck_id=node.deck.id) }}" 
+                                      style="display: inline;"
+                                      onsubmit="event.stopPropagation(); return confirm('Delete this deck?');">
+                                    <button type="submit" class="btn-icon btn-delete" title="Delete">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% if node.children %}
                         {% for child in node.children %}
-                            {{ render_node(child) }}
+                            {{ render_row(child, level + 1) }}
                         {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        {% endmacro %}
+                    {% endif %}
+                {% endmacro %}
 
-        {% for node in deck_stats %}
-            {{ render_node(node) }}
-        {% endfor %}
+                {% for node in deck_stats %}
+                    {{ render_row(node) }}
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 {% else %}
     <div class="empty-state">
-        <div class="empty-icon">📚</div>
+        <div class="empty-icon">
+            <svg width="64" height="64" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
+            </svg>
+        </div>
         <h2>No decks yet</h2>
         <p>Import your first deck to get started with spaced repetition learning!</p>
         <a href="{{ url_for('import_deck') }}" class="btn btn-primary">Import a Deck</a>
@@ -110,6 +146,99 @@
 {% endif %}
 
 <script>
+let draggedDeckId = null;
+
+// Drag and drop functions
+function handleDragStart(event, deckId) {
+    draggedDeckId = deckId;
+    event.currentTarget.classList.add('dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/html', event.currentTarget.innerHTML);
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const row = event.currentTarget;
+    if (row.dataset.deckId !== String(draggedDeckId)) {
+        row.classList.add('drag-over');
+    }
+    return false;
+}
+
+function handleDragLeave(event) {
+    event.currentTarget.classList.remove('drag-over');
+}
+
+function handleDragEnd(event) {
+    event.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+function handleDrop(event, targetDeckId) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    const targetRow = event.currentTarget;
+    targetRow.classList.remove('drag-over');
+    
+    if (draggedDeckId === targetDeckId) {
+        return false;
+    }
+    
+    // Ask user if they want to make it a subdeck
+    const confirmMsg = 'Make this deck a subdeck of the target deck?';
+    if (confirm(confirmMsg)) {
+        moveDeckToParent(draggedDeckId, targetDeckId);
+    }
+    
+    return false;
+}
+
+function moveDeckToParent(deckId, newParentId) {
+    fetch(`/api/deck/${deckId}/move`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_id: newParentId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to move deck');
+        }
+    })
+    .catch(err => alert('Error: ' + err));
+}
+
+// Collapse/expand deck children
+function toggleDeck(deckId) {
+    const currentRow = document.querySelector(`tr[data-deck-id="${deckId}"]`);
+    const toggle = currentRow.querySelector('.collapse-toggle');
+    const currentLevel = parseInt(currentRow.dataset.level);
+    
+    let nextRow = currentRow.nextElementSibling;
+    let isCollapsed = toggle.innerHTML.includes('path d="M4 6l4 4'); // Check if expanded (down arrow)
+    
+    // Toggle icon (rotate)
+    if (isCollapsed) {
+        toggle.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4z"/></svg>';
+    } else {
+        toggle.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4z"/></svg>';
+    }
+    
+    // Show/hide child rows
+    while (nextRow && parseInt(nextRow.dataset.level) > currentLevel) {
+        if (isCollapsed) {
+            nextRow.style.display = '';
+        } else {
+            nextRow.style.display = 'none';
+        }
+        nextRow = nextRow.nextElementSibling;
+    }
+}
+
 function enableDeckEdit(deckId) {
     const nameDisplay = document.getElementById(`deck-name-${deckId}`);
     const nameInput = document.getElementById(`deck-input-${deckId}`);
@@ -205,7 +334,6 @@ function createSubdeck(parentId) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            // Reload to show new subdeck for simplicity
             location.reload();
         } else {
             alert(data.error || 'Could not create subdeck');

@@ -14,6 +14,19 @@
         
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
+                <label for="parent_deck">Import Location (Optional)</label>
+                <select id="parent_deck" name="parent_deck">
+                    <option value="">Top Level (No parent)</option>
+                    {% if decks %}
+                        {% for deck in decks %}
+                            <option value="{{ deck.id }}">{{ deck.full_path }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <small>Choose a parent deck to import as a subdeck</small>
+            </div>
+            
+            <div class="form-group">
                 <label for="format_type">Who created this deck?</label>
                 <select id="format_type" name="format_type" required>
                     <option value="shubham">Shubham's Format (Standard)</option>

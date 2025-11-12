@@ -102,20 +102,44 @@ function nextCard() {
 
 function endStudySession() {
     // Hide card container
-    document.getElementById('card-container').style.display = 'none';
+    const cardContainer = document.getElementById('card-container');
+    if (cardContainer) {
+        cardContainer.style.display = 'none';
+    }
     
     // Show completion screen
     const completeScreen = document.getElementById('session-complete');
-    completeScreen.style.display = 'block';
-    document.getElementById('cards-reviewed').textContent = cardsReviewed;
+    if (completeScreen) {
+        completeScreen.style.display = 'block';
+        const cardsReviewedEl = document.getElementById('cards-reviewed');
+        if (cardsReviewedEl) {
+            cardsReviewedEl.textContent = cardsReviewed;
+        }
+    }
     
     // End session on server
-    fetch(`/api/session/${sessionId}/end`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
+    endSessionOnServer();
+}
+
+function endSessionOnServer() {
+    // Use sendBeacon for reliable session ending even when page is closing
+    if (typeof sessionId !== 'undefined' && sessionId) {
+        const url = `/api/session/${sessionId}/end`;
+        
+        // Try sendBeacon first (most reliable for page unload)
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url, JSON.stringify({}));
+        } else {
+            // Fallback to fetch for older browsers
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                keepalive: true  // Keep request alive even if page is closing
+            }).catch(err => console.log('Session end error:', err));
         }
-    });
+    }
 }
 
 // End session button
@@ -127,6 +151,23 @@ if (endSessionBtn) {
         }
     });
 }
+
+// Automatically end session when navigating away or closing tab
+window.addEventListener('beforeunload', function(e) {
+    endSessionOnServer();
+});
+
+// Additional handler for page visibility changes (mobile Safari, etc)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+        endSessionOnServer();
+    }
+});
+
+// Handler for mobile browsers (iOS Safari)
+window.addEventListener('pagehide', function(e) {
+    endSessionOnServer();
+});
 
 // Delete card function
 let currentEditingCardId = null;

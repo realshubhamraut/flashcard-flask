@@ -197,10 +197,16 @@ def study(deck_id):
     
     db.session.commit()
     
-    # Create study session
-    session = StudySession(deck_id=deck_id)
-    db.session.add(session)
-    db.session.commit()
+    # Get or create study session - reuse active session if exists
+    session = StudySession.query.filter_by(
+        deck_id=deck_id, 
+        ended_at=None
+    ).first()
+    
+    if not session:
+        session = StudySession(deck_id=deck_id)
+        db.session.add(session)
+        db.session.commit()
     
     return render_template('study.html', deck=deck, cards=cards, session_id=session.id)
 
@@ -354,6 +360,13 @@ def import_deck():
         
         file = request.files['file']
         format_type = request.form.get('format_type', 'shubham')
+        parent_deck_id = request.form.get('parent_deck')
+        
+        # Convert empty string to None
+        if parent_deck_id:
+            parent_deck_id = int(parent_deck_id)
+        else:
+            parent_deck_id = None
         
         if file.filename == '':
             flash('No file selected', 'error')
@@ -380,11 +393,12 @@ def import_deck():
                 else:
                     raise ValueError('Invalid JSON format. Expected array of cards or object with "cards" field.')
                 
-                # Create deck for current user
+                # Create deck for current user with optional parent
                 deck = Deck(
                     user_id=current_user.id,
                     name=deck_name,
-                    description=deck_description
+                    description=deck_description,
+                    parent_id=parent_deck_id
                 )
                 db.session.add(deck)
                 db.session.flush()
@@ -491,7 +505,26 @@ def import_deck():
             flash('Please upload a JSON file', 'error')
             return redirect(request.url)
     
-    return render_template('import.html')
+    # GET request - show form with deck list for parent selection
+    def get_deck_full_path(deck):
+        """Get full hierarchical path for a deck (e.g., 'Parent / Child / Grandchild')"""
+        path_parts = [deck.name]
+        current = deck
+        while current.parent_id:
+            current = Deck.query.get(current.parent_id)
+            if current:
+                path_parts.insert(0, current.name)
+        return ' / '.join(path_parts)
+    
+    user_decks = Deck.query.filter_by(user_id=current_user.id).order_by(Deck.name).all()
+    decks_with_paths = []
+    for deck in user_decks:
+        decks_with_paths.append({
+            'id': deck.id,
+            'full_path': get_deck_full_path(deck)
+        })
+    
+    return render_template('import.html', decks=decks_with_paths)
 
 
 @app.route('/stats')
@@ -586,6 +619,91 @@ def settings():
             flash(f'Error saving settings: {str(e)}', 'error')
     
     return render_template('settings.html', settings=user_settings)
+
+
+@app.route('/api/retention-data')
+@login_required
+def retention_data():
+    """Get retention data with historical reviews and predictions"""
+    # Get all cards for the current user
+    cards = Card.query.join(Deck).filter(Deck.user_id == current_user.id).all()
+    
+    if not cards:
+        return jsonify({'historical': [], 'predictions': []})
+    
+    # Get review history for the past 90 days
+    ninety_days_ago = datetime.utcnow() - timedelta(days=90)
+    
+    # Calculate retention for each day
+    retention_data = []
+    today = datetime.utcnow().date()
+    
+    for day_offset in range(90):
+        target_date = today - timedelta(days=90 - day_offset)
+        next_date = target_date + timedelta(days=1)
+        
+        # Count cards that were supposed to be reviewed on this day
+        cards_due = CardProgress.query.join(Card).join(Deck).filter(
+            Deck.user_id == current_user.id,
+            func.date(CardProgress.due_date) == target_date
+        ).count()
+        
+        if cards_due > 0:
+            # Count how many were actually reviewed
+            cards_reviewed = Review.query.join(Card).join(Deck).filter(
+                Deck.user_id == current_user.id,
+                func.date(Review.reviewed_at) == target_date
+            ).count()
+            
+            retention_rate = (cards_reviewed / cards_due) * 100
+        else:
+            retention_rate = None
+        
+        retention_data.append({
+            'date': str(target_date),
+            'retention': retention_rate,
+            'cards_due': cards_due,
+            'cards_reviewed': cards_reviewed if cards_due > 0 else 0
+        })
+    
+    # Calculate predictions for next 30 days
+    predictions = []
+    
+    # Calculate average retention rate from historical data
+    valid_retention_rates = [d['retention'] for d in retention_data if d['retention'] is not None]
+    if valid_retention_rates:
+        avg_retention = sum(valid_retention_rates) / len(valid_retention_rates)
+    else:
+        avg_retention = 85  # Default assumption
+    
+    # Use exponential decay model for predictions
+    # retention(t) = base_retention * e^(-decay_rate * t)
+    decay_rate = 0.01  # Configurable decay rate
+    
+    for day_offset in range(1, 31):
+        future_date = today + timedelta(days=day_offset)
+        
+        # Count cards that will be due on this date
+        cards_due_future = CardProgress.query.join(Card).join(Deck).filter(
+            Deck.user_id == current_user.id,
+            func.date(CardProgress.due_date) == future_date
+        ).count()
+        
+        # Predict retention using exponential decay
+        import math
+        predicted_retention = avg_retention * math.exp(-decay_rate * day_offset)
+        
+        predictions.append({
+            'date': str(future_date),
+            'predicted_retention': round(predicted_retention, 1),
+            'cards_due': cards_due_future
+        })
+    
+    return jsonify({
+        'historical': retention_data,
+        'predictions': predictions,
+        'avg_retention': round(avg_retention, 1) if valid_retention_rates else None
+    })
 
 
 @app.route('/deck/<int:deck_id>/delete', methods=['POST'])
