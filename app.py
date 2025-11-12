@@ -409,35 +409,47 @@ def import_deck():
                     if format_type == 'sanfoundry':
                         # Sanfoundry format: options as object {a, b, c, d}, answer as letter
                         options_dict = card_data.get('options', {})
-                        answer_letter = card_data.get('answer', '')
+                        answer_letter = card_data.get('answer', '').lower().strip()
+                        question_text = card_data.get('question', '').strip()
+                        explanation = card_data.get('explanation', '').strip()
                         
-                        # Convert options dict to array - preserve order for letter mapping
-                        # Don't filter empty options to maintain a->0, b->1, c->2, d->3 mapping
+                        # Skip section headers (no answer and no explanation)
+                        if not answer_letter and not explanation:
+                            continue
+                        
+                        # Skip empty questions
+                        if not question_text:
+                            continue
+                        
+                        # Build options array and letter-to-index mapping
+                        # Handle inconsistent option sets (missing b, only a/b, etc.)
                         options = []
+                        letter_to_index = {}
+                        
+                        # Check all possible letters in order
                         for letter in ['a', 'b', 'c', 'd']:
-                            opt_text = options_dict.get(letter, '')
-                            if opt_text:  # Only add non-empty options
+                            opt_text = options_dict.get(letter, '').strip()
+                            if opt_text:
+                                letter_to_index[letter] = len(options)
                                 options.append(opt_text)
                         
-                        # If no options provided (empty dict), set to None
+                        # Determine correct answer index
                         if not options:
+                            # No options - treat as open-ended question
                             options = None
-                            correct_answer_index = 0  # Default for questions without options
+                            correct_answer_index = None
+                        elif answer_letter in letter_to_index:
+                            # Valid answer letter
+                            correct_answer_index = letter_to_index[answer_letter]
                         else:
-                            # Convert answer letter to index
-                            # Need to find the actual index in our filtered options list
-                            letter_to_index = {}
-                            idx = 0
-                            for letter in ['a', 'b', 'c', 'd']:
-                                if options_dict.get(letter, ''):
-                                    letter_to_index[letter] = idx
-                                    idx += 1
-                            correct_answer_index = letter_to_index.get(answer_letter.lower(), 0)
+                            # Answer letter not in options (data inconsistency)
+                            # Skip this card or default to first option
+                            continue  # Skip invalid cards
                         
                         # Map sanfoundry fields to our schema
-                        question = card_data.get('question', '')
+                        question = question_text
                         hint = None  # Sanfoundry doesn't have hints
-                        description = card_data.get('explanation', '')
+                        description = explanation
                         reference = card_data.get('source_url', '')
                         
                         # Handle code_blocks array - join multiple code blocks with newlines
@@ -494,7 +506,16 @@ def import_deck():
                     db.session.add(card)
                 
                 db.session.commit()
-                flash(f'Successfully imported deck: {deck.name} with {len(cards_data)} cards', 'success')
+                
+                # Count actual imported cards
+                imported_count = Card.query.filter_by(deck_id=deck.id).count()
+                skipped_count = len(cards_data) - imported_count
+                
+                if skipped_count > 0:
+                    flash(f'Successfully imported deck: {deck.name} with {imported_count} cards ({skipped_count} skipped due to invalid data)', 'success')
+                else:
+                    flash(f'Successfully imported deck: {deck.name} with {imported_count} cards', 'success')
+                
                 return redirect(url_for('deck_detail', deck_id=deck.id))
                 
             except Exception as e:
