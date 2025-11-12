@@ -740,10 +740,25 @@ def delete_deck(deck_id):
     deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
     deck_name = deck.name
     
-    db.session.delete(deck)
-    db.session.commit()
-    
-    flash(f'Deck "{deck_name}" deleted successfully', 'success')
+    try:
+        # Delete all subdecks first (recursive)
+        def delete_deck_recursive(deck_to_delete):
+            # Get all children and delete them first
+            children = Deck.query.filter_by(parent_id=deck_to_delete.id).all()
+            for child in children:
+                delete_deck_recursive(child)
+            
+            # Now delete this deck (cards will cascade automatically)
+            db.session.delete(deck_to_delete)
+        
+        delete_deck_recursive(deck)
+        db.session.commit()
+        
+        flash(f'Deck "{deck_name}" deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting deck: {str(e)}', 'error')
+        
     return redirect(url_for('index'))
 
 
