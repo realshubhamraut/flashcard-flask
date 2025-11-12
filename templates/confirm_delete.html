@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Delete - {{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Confirm Deletion</h1>
+</div>
+
+<div class="confirm-delete-container">
+    <div class="warning-box">
+        <svg width="48" height="48" viewBox="0 0 16 16" fill="currentColor" class="warning-icon">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+        </svg>
+        <h2>Delete "{{ deck.name }}"?</h2>
+        <p class="warning-message">
+            This will permanently delete this deck and all its cards. This action cannot be undone.
+        </p>
+        
+        {% set card_count = deck.cards|length %}
+        {% if card_count > 0 %}
+            <p class="stat-info">
+                <strong>{{ card_count }}</strong> card{{ 's' if card_count != 1 else '' }} will be deleted.
+            </p>
+        {% endif %}
+        
+        {% set subdecks = deck.children %}
+        {% if subdecks %}
+            <p class="stat-info">
+                <strong>{{ subdecks|length }}</strong> subdeck{{ 's' if subdecks|length != 1 else '' }} will also be deleted.
+            </p>
+        {% endif %}
+        
+        <div class="action-buttons">
+            <form method="POST" action="{{ url_for('delete_deck', deck_id=deck.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-danger">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                    </svg>
+                    Yes, Delete Permanently
+                </button>
+            </form>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                </svg>
+                Cancel
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.confirm-delete-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.warning-box {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    box-shadow: 0 4px 12px var(--shadow);
+    text-align: center;
+    border: 2px solid var(--error);
+}
+
+.warning-icon {
+    color: var(--error);
+    margin-bottom: 1.5rem;
+}
+
+.warning-box h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.warning-message {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.stat-info {
+    color: var(--text-primary);
+    margin: 0.75rem 0;
+    font-size: 1rem;
+}
+
+.stat-info strong {
+    color: var(--error);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.btn-danger {
+    background: var(--error);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-tertiary);
+}
+
+@media (max-width: 768px) {
+    .warning-box {
+        padding: 2rem 1.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column-reverse;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}

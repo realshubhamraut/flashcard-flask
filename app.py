@@ -706,10 +706,16 @@ def retention_data():
     })
 
 
-@app.route('/deck/<int:deck_id>/delete', methods=['POST'])
+@app.route('/deck/<int:deck_id>/delete', methods=['GET', 'POST'])
 @login_required
 def delete_deck(deck_id):
     """Delete a deck"""
+    # If GET request, show confirmation page
+    if request.method == 'GET':
+        deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+        return render_template('confirm_delete.html', deck=deck)
+    
+    # POST request - actually delete
     deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
     deck_name = deck.name
     
