@@ -298,7 +298,15 @@ main {
 
 .deck-table tbody tr.drag-over {
     background: var(--bg-tertiary);
-    border-top: 2px solid var(--accent-primary);
+    border: 2px dashed var(--accent-primary);
+}
+
+.deck-table tbody tr.drag-over-top {
+    border-top: 3px solid var(--accent-primary);
+}
+
+.deck-table tbody tr.drag-over-bottom {
+    border-bottom: 3px solid var(--accent-primary);
 }
 
 .deck-table td {

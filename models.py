@@ -42,6 +42,8 @@ class Deck(db.Model):
     # Hierarchy: support parent deck (folder) and children (subdecks)
     parent_id = db.Column(db.Integer, db.ForeignKey('decks.id'), nullable=True)
     parent = db.relationship('Deck', remote_side=[id], backref=db.backref('children', cascade='all, delete-orphan'))
+    # Display order for sorting decks at the same level
+    display_order = db.Column(db.Integer, default=0)
 
     # Relationships
     cards = db.relationship('Card', backref='deck', lazy=True, cascade='all, delete-orphan')

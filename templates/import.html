@@ -14,6 +14,28 @@
         
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
+                <label for="import_mode">Import Mode</label>
+                <select id="import_mode" name="import_mode" onchange="toggleImportMode()">
+                    <option value="new">Create New Deck</option>
+                    <option value="existing">Add to Existing Deck</option>
+                </select>
+                <small>Choose whether to create a new deck or add cards to an existing one</small>
+            </div>
+            
+            <div id="existing_deck_group" class="form-group" style="display: none;">
+                <label for="existing_deck">Select Existing Deck</label>
+                <select id="existing_deck" name="existing_deck">
+                    <option value="">Choose a deck...</option>
+                    {% if decks %}
+                        {% for deck in decks %}
+                            <option value="{{ deck.id }}">{{ deck.full_path }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <small>Select the deck to add cards to</small>
+            </div>
+            
+            <div id="parent_deck_group" class="form-group">
                 <label for="parent_deck">Import Location (Optional)</label>
                 <select id="parent_deck" name="parent_deck">
                     <option value="">Top Level (No parent)</option>
@@ -180,4 +202,24 @@
         </ul>
     </div>
 </div>
+
+<script>
+function toggleImportMode() {
+    const mode = document.getElementById('import_mode').value;
+    const existingDeckGroup = document.getElementById('existing_deck_group');
+    const parentDeckGroup = document.getElementById('parent_deck_group');
+    
+    if (mode === 'existing') {
+        existingDeckGroup.style.display = 'block';
+        parentDeckGroup.style.display = 'none';
+        document.getElementById('existing_deck').required = true;
+        document.getElementById('parent_deck').required = false;
+    } else {
+        existingDeckGroup.style.display = 'none';
+        parentDeckGroup.style.display = 'block';
+        document.getElementById('existing_deck').required = false;
+        document.getElementById('parent_deck').required = false;
+    }
+}
+</script>
 {% endblock %}

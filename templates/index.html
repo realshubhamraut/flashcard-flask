@@ -160,8 +160,12 @@
 let draggedDeckId = null;
 
 // Drag and drop functions
+let draggedElement = null;
+let dropIndicator = null;
+
 function handleDragStart(event, deckId) {
     draggedDeckId = deckId;
+    draggedElement = event.currentTarget;
     event.currentTarget.classList.add('dragging');
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/html', event.currentTarget.innerHTML);
@@ -170,20 +174,46 @@ function handleDragStart(event, deckId) {
 function handleDragOver(event) {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+    
     const row = event.currentTarget;
-    if (row.dataset.deckId !== String(draggedDeckId)) {
+    if (row.dataset.deckId === String(draggedDeckId)) {
+        return false;
+    }
+    
+    // Get mouse position relative to row
+    const rect = row.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const mouseY = event.clientY;
+    
+    // Show indicator for reordering (above or below)
+    row.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over');
+    
+    // If hovering near top (top 25%), show top indicator
+    if (mouseY < rect.top + rect.height * 0.25) {
+        row.classList.add('drag-over-top');
+    }
+    // If hovering near bottom (bottom 25%), show bottom indicator
+    else if (mouseY > rect.bottom - rect.height * 0.25) {
+        row.classList.add('drag-over-bottom');
+    }
+    // If hovering in middle (50%), show make-subdeck indicator
+    else {
         row.classList.add('drag-over');
     }
+    
     return false;
 }
 
 function handleDragLeave(event) {
-    event.currentTarget.classList.remove('drag-over');
+    const row = event.currentTarget;
+    row.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
 }
 
 function handleDragEnd(event) {
     event.currentTarget.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.querySelectorAll('.drag-over, .drag-over-top, .drag-over-bottom').forEach(el => {
+        el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+    });
 }
 
 function handleDrop(event, targetDeckId) {
@@ -191,19 +221,45 @@ function handleDrop(event, targetDeckId) {
     event.preventDefault();
     
     const targetRow = event.currentTarget;
-    targetRow.classList.remove('drag-over');
     
     if (draggedDeckId === targetDeckId) {
+        targetRow.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
         return false;
     }
     
-    // Ask user if they want to make it a subdeck
-    const confirmMsg = 'Make this deck a subdeck of the target deck?';
-    if (confirm(confirmMsg)) {
+    // Determine drop position based on which indicator is active
+    if (targetRow.classList.contains('drag-over-top')) {
+        // Reorder: insert before target
+        targetRow.classList.remove('drag-over-top');
+        reorderDeck(draggedDeckId, targetDeckId, 'before');
+    } else if (targetRow.classList.contains('drag-over-bottom')) {
+        // Reorder: insert after target
+        targetRow.classList.remove('drag-over-bottom');
+        reorderDeck(draggedDeckId, targetDeckId, 'after');
+    } else {
+        // Make subdeck
+        targetRow.classList.remove('drag-over');
         moveDeckToParent(draggedDeckId, targetDeckId);
     }
     
     return false;
+}
+
+function reorderDeck(deckId, targetId, position) {
+    fetch(`/api/deck/${deckId}/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: targetId, position: position })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to reorder deck');
+        }
+    })
+    .catch(err => alert('Error: ' + err));
 }
 
 function moveDeckToParent(deckId, newParentId) {

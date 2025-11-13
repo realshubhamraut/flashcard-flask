@@ -147,11 +147,11 @@ def index():
         ).count()
 
         node = {'deck': deck, 'stats': stats, 'due': due_count, 'children': []}
-        for child in sorted(children_map.get(deck.id, []), key=lambda x: x.name.lower()):
+        for child in sorted(children_map.get(deck.id, []), key=lambda x: (x.display_order, x.name.lower())):
             node['children'].append(build_node(child))
         return node
 
-    deck_tree = [build_node(d) for d in sorted(roots, key=lambda x: x.name.lower())]
+    deck_tree = [build_node(d) for d in sorted(roots, key=lambda x: (x.display_order, x.name.lower()))]
 
     return render_template('index.html', deck_stats=deck_tree)
 
@@ -361,12 +361,18 @@ def import_deck():
         file = request.files['file']
         format_type = request.form.get('format_type', 'shubham')
         parent_deck_id = request.form.get('parent_deck')
+        existing_deck_id = request.form.get('existing_deck')
         
-        # Convert empty string to None
+        # Convert empty strings to None
         if parent_deck_id:
             parent_deck_id = int(parent_deck_id)
         else:
             parent_deck_id = None
+            
+        if existing_deck_id:
+            existing_deck_id = int(existing_deck_id)
+        else:
+            existing_deck_id = None
         
         if file.filename == '':
             flash('No file selected', 'error')
@@ -393,15 +399,20 @@ def import_deck():
                 else:
                     raise ValueError('Invalid JSON format. Expected array of cards or object with "cards" field.')
                 
-                # Create deck for current user with optional parent
-                deck = Deck(
-                    user_id=current_user.id,
-                    name=deck_name,
-                    description=deck_description,
-                    parent_id=parent_deck_id
-                )
-                db.session.add(deck)
-                db.session.flush()
+                # Use existing deck or create new one
+                if existing_deck_id:
+                    deck = Deck.query.filter_by(id=existing_deck_id, user_id=current_user.id).first_or_404()
+                    flash(f'Importing cards into existing deck: {deck.name}', 'info')
+                else:
+                    # Create deck for current user with optional parent
+                    deck = Deck(
+                        user_id=current_user.id,
+                        name=deck_name,
+                        description=deck_description,
+                        parent_id=parent_deck_id
+                    )
+                    db.session.add(deck)
+                    db.session.flush()
                 
                 # Create cards
                 for card_data in cards_data:
@@ -828,6 +839,56 @@ def move_deck(deck_id):
     try:
         db.session.commit()
         return jsonify({'success': True, 'deck_id': deck.id, 'parent_id': deck.parent_id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/deck/<int:deck_id>/reorder', methods=['PUT'])
+@login_required
+def reorder_deck(deck_id):
+    """Change a deck's display order relative to a target deck."""
+    deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    data = request.json or {}
+    target_id = data.get('target_id')
+    position = data.get('position', 'after')  # 'before' or 'after'
+    
+    if not target_id:
+        return jsonify({'error': 'target_id required'}), 400
+    
+    target = Deck.query.filter_by(id=target_id, user_id=current_user.id).first_or_404()
+    
+    # Must be at same level (same parent)
+    if deck.parent_id != target.parent_id:
+        return jsonify({'error': 'Can only reorder decks at the same level'}), 400
+    
+    # Get all decks at this level
+    siblings = Deck.query.filter_by(
+        user_id=current_user.id,
+        parent_id=deck.parent_id
+    ).order_by(Deck.display_order, Deck.name).all()
+    
+    # Remove the dragged deck from list
+    siblings = [d for d in siblings if d.id != deck.id]
+    
+    # Find target position
+    target_idx = next((i for i, d in enumerate(siblings) if d.id == target_id), None)
+    if target_idx is None:
+        return jsonify({'error': 'Target deck not found'}), 400
+    
+    # Insert deck at new position
+    if position == 'before':
+        siblings.insert(target_idx, deck)
+    else:  # after
+        siblings.insert(target_idx + 1, deck)
+    
+    # Update display_order for all siblings
+    for i, sibling in enumerate(siblings):
+        sibling.display_order = i
+    
+    try:
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
