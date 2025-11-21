@@ -13,7 +13,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Application config
-    CARDS_PER_SESSION = 20
+    CARDS_PER_SESSION = 100
     NEW_CARDS_PER_DAY = 10
     
     # Spaced repetition defaults (similar to Anki)

@@ -1,4 +1,4 @@
-// Study session functionality
+// Study session functionality - Simple tracking (no spaced repetition)
 
 let cardStartTime = Date.now();
 
@@ -13,43 +13,119 @@ function toggleHint(button) {
     }
 }
 
-function selectAnswer(button, cardId, correctAnswer) {
-    const options = button.parentElement.querySelectorAll('.option-btn');
-    const selectedIndex = parseInt(button.dataset.index);
+// Handle option selection with trippy button using event delegation
+document.addEventListener('DOMContentLoaded', function() {
+    // Use event delegation on the card-container for all option clicks
+    const cardContainer = document.getElementById('card-container');
+    
+    if (cardContainer) {
+        cardContainer.addEventListener('click', function(e) {
+            // Check if click is on option button
+            if (e.target.closest('.option-btn')) {
+                const optionBtn = e.target.closest('.option-btn');
+                const wrapper = optionBtn.closest('.option-wrapper');
+                const card = optionBtn.closest('.flashcard');
+                
+                // Don't process if already disabled
+                if (optionBtn.disabled) {
+                    console.log('Option button already disabled');
+                    return;
+                }
+                
+                const cardId = parseInt(card.dataset.cardId);
+                const correctAnswer = parseInt(card.dataset.correctAnswer);
+                const index = parseInt(optionBtn.dataset.index);
+                
+                console.log(`Option clicked: index=${index}, cardId=${cardId}, correctAnswer=${correctAnswer}`);
+                selectAnswer(wrapper, cardId, correctAnswer, index, false);
+            }
+            
+            // Check if click is on trippy button
+            else if (e.target.closest('.trippy-btn')) {
+                e.stopPropagation();
+                const trippyBtn = e.target.closest('.trippy-btn');
+                const wrapper = trippyBtn.closest('.option-wrapper');
+                const card = trippyBtn.closest('.flashcard');
+                
+                // Don't process if already disabled
+                if (trippyBtn.disabled) {
+                    console.log('Trippy button already disabled');
+                    return;
+                }
+                
+                const optionBtn = wrapper.querySelector('.option-btn');
+                const cardId = parseInt(card.dataset.cardId);
+                const correctAnswer = parseInt(card.dataset.correctAnswer);
+                const index = parseInt(optionBtn.dataset.index);
+                
+                console.log(`Trippy button clicked: index=${index}, cardId=${cardId}`);
+                selectAnswer(wrapper, cardId, correctAnswer, index, true);
+            }
+        });
+    }
+});
+
+function selectAnswer(wrapper, cardId, correctAnswer, selectedIndex, isTrippy) {
+    const container = wrapper.parentElement;
+    const allWrappers = container.querySelectorAll('.option-wrapper');
     
     // Disable all options
-    options.forEach(opt => {
-        opt.disabled = true;
-        const index = parseInt(opt.dataset.index);
+    allWrappers.forEach(w => {
+        const btn = w.querySelector('.option-btn');
+        const trippy = w.querySelector('.trippy-btn');
+        btn.disabled = true;
+        trippy.disabled = true;
+        trippy.style.display = 'none';
         
-        if (index === correctAnswer) {
-            opt.classList.add('correct');
-        } else if (index === selectedIndex && index !== correctAnswer) {
-            opt.classList.add('incorrect');
+        const idx = parseInt(btn.dataset.index);
+        
+        if (idx === correctAnswer) {
+            btn.classList.add('correct');
+        } else if (idx === selectedIndex) {
+            btn.classList.add('incorrect');
         }
     });
     
-    // Show result and explanation immediately
-    const isCorrect = selectedIndex === correctAnswer;
-    showAnswer(cardId, isCorrect);
+    // Determine result
+    let result;
+    if (isTrippy) {
+        result = 'trippy';
+        wrapper.querySelector('.option-btn').classList.add('trippy-marked');
+    } else if (selectedIndex === correctAnswer) {
+        result = 'correct';
+    } else {
+        result = 'incorrect';
+    }
+    
+    // Show explanation
+    showAnswer(cardId, result);
 }
 
-function showAnswer(cardId, isCorrect = null) {
+function showAnswer(cardId, result) {
     const explanation = document.getElementById(`explanation-${cardId}`);
-    
-    // Just show explanation without the result message
     explanation.style.display = 'block';
     
-    // Scroll to explanation smoothly
+    // Record the result
+    recordReview(cardId, result);
+    
+    // Scroll to explanation
     setTimeout(() => {
         explanation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 300);
 }
 
-function rateCard(cardId, rating) {
+function showAnswerOnly(cardId) {
+    const explanation = document.getElementById(`explanation-${cardId}`);
+    explanation.style.display = 'block';
+    
+    setTimeout(() => {
+        explanation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+}
+
+function recordReview(cardId, result) {
     const duration = Math.floor((Date.now() - cardStartTime) / 1000);
     
-    // Send review to server
     fetch('/api/review', {
         method: 'POST',
         headers: {
@@ -57,22 +133,33 @@ function rateCard(cardId, rating) {
         },
         body: JSON.stringify({
             card_id: cardId,
-            rating: rating,
+            result: result,
             duration: duration,
             session_id: sessionId
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             cardsReviewed++;
-            nextCard();
+            console.log(`Card reviewed: ${result}. Counts - Correct: ${data.correct_count}, Incorrect: ${data.incorrect_count}, Trippy: ${data.trippy_count}`);
+        } else {
+            console.error('Review failed:', data.error);
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to record review. Please try again.');
+        console.error('Error recording review:', error);
+        alert('Failed to record your answer. Please check your connection and try again.');
     });
+}
+
+function nextCardAction() {
+    nextCard();
 }
 
 function nextCard() {
@@ -101,81 +188,35 @@ function nextCard() {
 }
 
 function endStudySession() {
-    // Hide card container
-    const cardContainer = document.getElementById('card-container');
-    if (cardContainer) {
-        cardContainer.style.display = 'none';
-    }
+    document.getElementById('card-container').style.display = 'none';
+    document.querySelector('.study-header').style.display = 'none';
+    document.getElementById('session-complete').style.display = 'block';
     
-    // Show completion screen
-    const completeScreen = document.getElementById('session-complete');
-    if (completeScreen) {
-        completeScreen.style.display = 'block';
-        const cardsReviewedEl = document.getElementById('cards-reviewed');
-        if (cardsReviewedEl) {
-            cardsReviewedEl.textContent = cardsReviewed;
-        }
-    }
+    // Update session stats
+    document.getElementById('session-stats').innerHTML = `
+        <p>Cards reviewed: ${cardsReviewed} / ${totalCards}</p>
+    `;
     
     // End session on server
-    endSessionOnServer();
-}
-
-function endSessionOnServer() {
-    // Use sendBeacon for reliable session ending even when page is closing
-    if (typeof sessionId !== 'undefined' && sessionId) {
-        const url = `/api/session/${sessionId}/end`;
-        
-        // Try sendBeacon first (most reliable for page unload)
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon(url, JSON.stringify({}));
-        } else {
-            // Fallback to fetch for older browsers
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                keepalive: true  // Keep request alive even if page is closing
-            }).catch(err => console.log('Session end error:', err));
-        }
-    }
-}
-
-// End session button
-const endSessionBtn = document.getElementById('end-session');
-if (endSessionBtn) {
-    endSessionBtn.addEventListener('click', function() {
-        if (confirm('Are you sure you want to end this study session?')) {
-            endStudySession();
+    fetch(`/api/session/${sessionId}/end`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         }
     });
 }
 
-// Automatically end session when navigating away or closing tab
-window.addEventListener('beforeunload', function(e) {
-    endSessionOnServer();
-});
-
-// Additional handler for page visibility changes (mobile Safari, etc)
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden') {
-        endSessionOnServer();
+// End session button
+document.getElementById('end-session').addEventListener('click', function() {
+    if (confirm('Are you sure you want to end this session?')) {
+        endStudySession();
     }
 });
-
-// Handler for mobile browsers (iOS Safari)
-window.addEventListener('pagehide', function(e) {
-    endSessionOnServer();
-});
-
-// Delete card function
-let currentEditingCardId = null;
 
 function deleteCard(cardId, event) {
     event.stopPropagation();
     
-    if (!confirm('Are you sure you want to delete this card? This cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this card? This action cannot be undone.')) {
         return;
     }
     
@@ -188,28 +229,31 @@ function deleteCard(cardId, event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
-            cardElement.remove();
+            // Find current card and remove it
+            const cards = document.querySelectorAll('.flashcard');
+            const currentCard = cards[currentCardIndex];
             
+            // Adjust total cards
             totalCards--;
             document.getElementById('total-cards').textContent = totalCards;
             
             if (totalCards === 0) {
-                endStudySession();
-            } else if (currentCardIndex >= totalCards) {
-                currentCardIndex = totalCards - 1;
-                const cards = document.querySelectorAll('.flashcard');
-                if (cards[currentCardIndex]) {
-                    cards[currentCardIndex].style.display = 'block';
-                }
+                // No more cards
+                alert('No more cards in this session!');
+                window.location.href = '/';
             } else {
-                const cards = document.querySelectorAll('.flashcard');
-                if (cards[currentCardIndex]) {
-                    cards[currentCardIndex].style.display = 'block';
+                // Move to next card without incrementing index
+                currentCard.remove();
+                const remainingCards = document.querySelectorAll('.flashcard');
+                
+                if (currentCardIndex >= remainingCards.length) {
+                    currentCardIndex = remainingCards.length - 1;
                 }
+                
+                remainingCards[currentCardIndex].style.display = 'block';
+                document.getElementById('current-card').textContent = currentCardIndex + 1;
+                cardStartTime = Date.now();
             }
-            
-            alert('Card deleted successfully');
         } else {
             alert('Failed to delete card: ' + (data.error || 'Unknown error'));
         }
@@ -220,67 +264,43 @@ function deleteCard(cardId, event) {
     });
 }
 
-function openScheduleEditor(cardId) {
-    currentEditingCardId = cardId;
+function markAsCleared(cardId, event) {
+    event.preventDefault();
+    event.stopPropagation();
     
-    fetch(`/api/card/${cardId}/progress`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const progress = data.progress;
-            
-            document.getElementById('card-state').value = progress.state || 'new';
-            document.getElementById('interval-days').value = progress.interval || 0;
-            document.getElementById('ease-factor').value = progress.ease_factor || 2.5;
-            document.getElementById('repetitions').value = progress.repetitions || 0;
-            
-            const dueDate = progress.due_date ? new Date(progress.due_date) : new Date();
-            const formatted = dueDate.toISOString().slice(0, 16);
-            document.getElementById('next-review-date').value = formatted;
-            
-            document.getElementById('schedule-modal').style.display = 'flex';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to load card progress');
-    });
-}
-
-function closeScheduleEditor() {
-    document.getElementById('schedule-modal').style.display = 'none';
-    currentEditingCardId = null;
-}
-
-function saveSchedule() {
-    if (!currentEditingCardId) return;
+    if (!confirm('Mark this card as mastered? It will be removed from this review list.')) {
+        return;
+    }
     
-    const scheduleData = {
-        state: document.getElementById('card-state').value,
-        due_date: document.getElementById('next-review-date').value,
-        interval: parseInt(document.getElementById('interval-days').value),
-        ease_factor: parseFloat(document.getElementById('ease-factor').value),
-        repetitions: parseInt(document.getElementById('repetitions').value)
-    };
-    
-    fetch(`/api/card/${currentEditingCardId}/progress`, {
-        method: 'PUT',
+    fetch(`/api/card/${cardId}/clear_status`, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(scheduleData)
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Schedule updated successfully!');
-            closeScheduleEditor();
+            // Show success message
+            const card = document.querySelector(`[data-card-id="${cardId}"]`);
+            const explanation = card.querySelector('.explanation-section');
+            
+            // Add success message
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'background: var(--success); color: white; padding: 0.75rem; border-radius: 8px; margin-top: 1rem; text-align: center;';
+            successMsg.innerHTML = '✓ Card marked as mastered! Moving to next...';
+            explanation.insertBefore(successMsg, explanation.querySelector('.action-buttons'));
+            
+            // Auto-advance to next card after 1.5 seconds
+            setTimeout(() => {
+                nextCard();
+            }, 1500);
         } else {
-            alert('Failed to update schedule: ' + (data.error || 'Unknown error'));
+            alert('Failed to clear card status: ' + (data.message || data.error || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to save schedule. Please try again.');
+        alert('Failed to clear card status. Please try again.');
     });
 }

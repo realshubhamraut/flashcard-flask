@@ -86,12 +86,10 @@ flashcard-flask/
 **card_progress**
 - `id` (Primary Key)
 - `card_id` (Foreign Key → cards.id, unique)
-- `state` (String: new/learning/review/mastered)
-- `due_date` (DateTime)
-- `interval` (Integer, days)
-- `ease_factor` (Float, default 2.5)
-- `repetitions` (Integer)
-- `lapses` (Integer)
+- `correct_count` (Integer, times answered correctly)
+- `incorrect_count` (Integer, times answered incorrectly)
+- `trippy_count` (Integer, times marked as trippy/tricky)
+- `last_result` (String: correct/incorrect/trippy)
 - `last_reviewed` (DateTime)
 - `updated_at` (DateTime)
 
@@ -131,44 +129,38 @@ POST /api/review                # Record card review
 POST /api/session/<id>/end      # End study session
 ```
 
-## Spaced Repetition Algorithm
+## Study System
 
-### SM-2 Implementation
+### Simple Tracking Implementation
 
-The algorithm is based on SuperMemo 2 (SM-2):
+The system uses a simple tracking approach instead of complex spaced repetition:
 
-1. **Initial State**: Cards start as "new" with ease factor 2.5
-2. **Rating Impact**:
-   - Again: Reset to learning, reduce ease by 0.2
-   - Hard: Multiply interval by 1.2, reduce ease by 0.15
-   - Good: Standard progression (1→6→interval×ease)
-   - Easy: Fast progression with 1.3× bonus, increase ease by 0.15
+1. **Progress Tracking**: Cards track three counts:
+   - Correct answers
+   - Incorrect answers
+   - Trippy marks (cards you find confusing)
 
-3. **State Transitions**:
-   - New → Learning (on first review)
-   - Learning → Review (after graduating interval)
-   - Review → Mastered (interval ≥21 days, reps ≥3)
+2. **Study Modes**:
+   - **Study Entirely**: All cards in deck, shuffled
+   - **Study Only Trippy**: Cards marked as tricky
+   - **Study Missed**: Cards answered incorrectly
 
-4. **Interval Calculation**:
-   ```python
-   if repetitions == 0:
-       interval = 1 day
-   elif repetitions == 1:
-       interval = 6 days
-   else:
-       interval = previous_interval × ease_factor
-   ```
+3. **Result Tracking**:
+   - Last result determines if card appears in trippy/missed lists
+   - Answering correctly clears incorrect/trippy status
+   - Can manually mark cards as "mastered" to clear status
+
+4. **Session Flow**:
+   - Choose study mode
+   - Answer questions (correct/incorrect)
+   - Mark confusing questions as trippy (hover on right side)
+   - Review only problematic cards later
 
 ### Customization
 
 Edit `config.py` to adjust:
 ```python
-SR_GRADUATING_INTERVAL = 1  # Days after first success
-SR_EASY_INTERVAL = 4         # Days for easy cards
-SR_STARTING_EASE = 2.5       # Initial ease factor
-SR_MINIMUM_EASE = 1.3        # Minimum ease factor
-SR_EASY_BONUS = 1.3          # Easy card multiplier
-SR_HARD_INTERVAL = 1.2       # Hard card multiplier
+CARDS_PER_SESSION = 100  # Number of cards per study session
 ```
 
 ## Extending the Application

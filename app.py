@@ -135,18 +135,13 @@ def index():
     def build_node(deck):
         # Aggregate stats across subdecks
         stats = deck.get_stats(include_subdecks=True)
-        # Count due cards across the deck and its descendants
+        # Count not-studied cards across the deck and its descendants
         descendant_ids = deck._collect_descendant_ids()
-        due_count = Card.query.filter(Card.deck_id.in_(descendant_ids)).join(
-            CardProgress, Card.id == CardProgress.card_id, isouter=True
-        ).filter(
-            db.or_(
-                CardProgress.due_date == None,
-                CardProgress.due_date <= datetime.utcnow()
-            )
-        ).count()
+        not_studied_count = Card.query.filter(Card.deck_id.in_(descendant_ids)).outerjoin(
+            CardProgress, Card.id == CardProgress.card_id
+        ).filter(CardProgress.id == None).count()
 
-        node = {'deck': deck, 'stats': stats, 'due': due_count, 'children': []}
+        node = {'deck': deck, 'stats': stats, 'due': not_studied_count, 'children': []}
         for child in sorted(children_map.get(deck.id, []), key=lambda x: (x.display_order, x.name.lower())):
             node['children'].append(build_node(child))
         return node
@@ -163,41 +158,80 @@ def deck_detail(deck_id):
     deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
     stats = deck.get_stats()
     
-    # Get due cards count
-    due_count = Card.query.filter_by(deck_id=deck_id).join(
-        CardProgress, Card.id == CardProgress.card_id, isouter=True
-    ).filter(
-        db.or_(
-            CardProgress.due_date == None,
-            CardProgress.due_date <= datetime.utcnow()
-        )
-    ).count()
+    # Get not-studied cards count
+    not_studied_count = Card.query.filter_by(deck_id=deck_id).outerjoin(
+        CardProgress, Card.id == CardProgress.card_id
+    ).filter(CardProgress.id == None).count()
     
-    return render_template('deck_detail.html', deck=deck, stats=stats, due_count=due_count)
+    return render_template('deck_detail.html', deck=deck, stats=stats, due_count=not_studied_count)
 
 
 @app.route('/study/<int:deck_id>')
 @login_required
 def study(deck_id):
-    """Study session page"""
+    """Study session page - show mode selection or start studying"""
     deck = Deck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
     
-    # Get due cards
-    cards = SpacedRepetition.get_due_cards(deck_id, limit=app.config['CARDS_PER_SESSION'])
+    # Get study mode from query parameter
+    mode = request.args.get('mode', 'select')
+    
+    if mode == 'select':
+        # Show mode selection page
+        # Count cards for each mode
+        all_cards = Card.query.filter_by(deck_id=deck_id).count()
+        
+        trippy_cards = db.session.query(Card).join(
+            CardProgress, Card.id == CardProgress.card_id
+        ).filter(
+            Card.deck_id == deck_id,
+            CardProgress.last_result == 'trippy'
+        ).count()
+        
+        missed_cards = db.session.query(Card).join(
+            CardProgress, Card.id == CardProgress.card_id
+        ).filter(
+            Card.deck_id == deck_id,
+            CardProgress.last_result == 'incorrect'
+        ).count()
+        
+        return render_template('study_mode_select.html', 
+                             deck=deck, 
+                             all_cards=all_cards,
+                             trippy_cards=trippy_cards,
+                             missed_cards=missed_cards)
+    
+    # Get cards based on mode
+    query = Card.query.filter_by(deck_id=deck_id)
+    
+    if mode == 'trippy':
+        # Only cards marked as trippy
+        query = query.join(CardProgress, Card.id == CardProgress.card_id).filter(
+            CardProgress.last_result == 'trippy'
+        )
+    elif mode == 'missed':
+        # Only cards marked as incorrect
+        query = query.join(CardProgress, Card.id == CardProgress.card_id).filter(
+            CardProgress.last_result == 'incorrect'
+        )
+    # else mode == 'all' - get all cards
+    
+    # Shuffle and limit
+    from sqlalchemy import func
+    cards = query.order_by(func.random()).limit(app.config['CARDS_PER_SESSION']).all()
     
     if not cards:
-        flash('No cards due for review!', 'info')
+        flash(f'No cards available for {mode} mode!', 'info')
         return redirect(url_for('deck_detail', deck_id=deck_id))
     
     # Initialize progress for cards without it
     for card in cards:
         if not card.progress:
-            progress = SpacedRepetition.initialize_card_progress(card)
+            progress = CardProgress(card_id=card.id)
             db.session.add(progress)
     
     db.session.commit()
     
-    # Get or create study session - reuse active session if exists
+    # Get or create study session
     session = StudySession.query.filter_by(
         deck_id=deck_id, 
         ended_at=None
@@ -208,7 +242,7 @@ def study(deck_id):
         db.session.add(session)
         db.session.commit()
     
-    return render_template('study.html', deck=deck, cards=cards, session_id=session.id)
+    return render_template('study.html', deck=deck, cards=cards, session_id=session.id, mode=mode)
 
 
 @app.route('/api/review', methods=['POST'])
@@ -217,27 +251,44 @@ def review_card():
     """Record a card review"""
     data = request.json
     card_id = data.get('card_id')
-    rating = data.get('rating')
+    result = data.get('result')  # 'correct', 'incorrect', or 'trippy'
     duration = data.get('duration', 0)
     session_id = data.get('session_id')
     
-    if not card_id or not rating:
-        return jsonify({'error': 'Missing card_id or rating'}), 400
+    if not card_id or not result:
+        return jsonify({'error': 'Missing card_id or result'}), 400
+    
+    if result not in ['correct', 'incorrect', 'trippy']:
+        return jsonify({'error': 'Invalid result value'}), 400
     
     card = Card.query.get_or_404(card_id)
     
     # Get or create progress
     progress = card.progress
     if not progress:
-        progress = SpacedRepetition.initialize_card_progress(card)
+        progress = CardProgress(card_id=card.id)
         db.session.add(progress)
-        db.session.commit()
     
-    # Update progress using spaced repetition algorithm
-    progress = SpacedRepetition.schedule_card(progress, rating)
+    # Update progress counts
+    if result == 'correct':
+        progress.correct_count += 1
+    elif result == 'incorrect':
+        progress.incorrect_count += 1
+    elif result == 'trippy':
+        progress.trippy_count += 1
+    
+    # IMPORTANT: Update last_result - this clears 'incorrect' or 'trippy' status
+    # when the card is answered correctly in a later session
+    progress.last_result = result
+    progress.last_reviewed = datetime.utcnow()
     
     # Record review
-    review = SpacedRepetition.record_review(card_id, rating, duration)
+    review = Review(
+        card_id=card_id,
+        rating=result,
+        duration=duration,
+        reviewed_at=datetime.utcnow()
+    )
     db.session.add(review)
     
     # Update study session
@@ -245,17 +296,43 @@ def review_card():
         session = StudySession.query.get(session_id)
         if session:
             session.cards_studied += 1
-            if rating in ['good', 'easy']:
+            if result == 'correct':
                 session.cards_correct += 1
     
     db.session.commit()
     
     return jsonify({
         'success': True,
-        'next_review': progress.due_date.isoformat(),
-        'interval': progress.interval,
-        'state': progress.state
+        'result': result,
+        'correct_count': progress.correct_count,
+        'incorrect_count': progress.incorrect_count,
+        'trippy_count': progress.trippy_count
     })
+
+
+@app.route('/api/card/<int:card_id>/clear_status', methods=['POST'])
+@login_required
+def clear_card_status(card_id):
+    """Clear incorrect/trippy status - mark as mastered"""
+    card = Card.query.get_or_404(card_id)
+    
+    # Verify ownership through deck
+    if card.deck.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        progress = card.progress
+        if progress:
+            # Clear the last_result to remove from missed/trippy lists
+            progress.last_result = 'correct'
+            progress.last_reviewed = datetime.utcnow()
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Card status cleared'})
+        else:
+            return jsonify({'success': False, 'message': 'No progress found'}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/card/<int:card_id>/delete', methods=['DELETE'])
@@ -420,9 +497,19 @@ def import_deck():
                     if format_type == 'sanfoundry':
                         # Sanfoundry format: options as object {a, b, c, d}, answer as letter
                         options_dict = card_data.get('options', {})
-                        answer_letter = card_data.get('answer', '').lower().strip()
-                        question_text = card_data.get('question', '').strip()
+                        
+                        # Support both 'answer' and 'correct_answer' field names
+                        answer_letter = (card_data.get('correct_answer') or card_data.get('answer', '')).lower().strip()
+                        
+                        # Support both 'question' and 'question_text' field names
+                        question_text = (card_data.get('question_text') or card_data.get('question', '')).strip()
+                        
                         explanation = card_data.get('explanation', '').strip()
+                        
+                        # Get difficulty if provided
+                        difficulty = card_data.get('difficulty', '').lower().strip()
+                        if difficulty not in ['easy', 'medium', 'hard']:
+                            difficulty = None
                         
                         # Skip section headers (no answer and no explanation)
                         if not answer_letter and not explanation:
@@ -437,8 +524,8 @@ def import_deck():
                         options = []
                         letter_to_index = {}
                         
-                        # Check all possible letters in order
-                        for letter in ['a', 'b', 'c', 'd']:
+                        # Check all possible letters in order (support up to 'f' for some formats)
+                        for letter in ['a', 'b', 'c', 'd', 'e', 'f']:
                             opt_text = options_dict.get(letter, '').strip()
                             if opt_text:
                                 letter_to_index[letter] = len(options)
@@ -455,6 +542,7 @@ def import_deck():
                         else:
                             # Answer letter not in options (data inconsistency)
                             # Skip this card or default to first option
+                            print(f"Warning: Skipping card - answer '{answer_letter}' not found in options for question: {question_text[:50]}...")
                             continue  # Skip invalid cards
                         
                         # Map sanfoundry fields to our schema
@@ -465,8 +553,8 @@ def import_deck():
                         
                         # Handle code_blocks array - join multiple code blocks with newlines
                         code_blocks = card_data.get('code_blocks', [])
-                        if code_blocks:
-                            code = '\n\n'.join(code_blocks)
+                        if code_blocks and isinstance(code_blocks, list):
+                            code = '\n\n'.join(str(block) for block in code_blocks if block)
                         else:
                             code = None
                         
@@ -480,6 +568,7 @@ def import_deck():
                         question = card_data.get('question')
                         reference = card_data.get('reference')
                         code = card_data.get('code')
+                        difficulty = card_data.get('difficulty', '').lower()  # For Shubham's format
                         
                         if format_type == 'payal':
                             # Remove [cite_start] markers and clean citations
@@ -487,6 +576,12 @@ def import_deck():
                                 description = description.replace('[cite_start]', '').strip()
                             if hint:
                                 hint = hint.replace('[cite_start]', '').strip()
+                            # Payal's format has difficulty field
+                            difficulty = card_data.get('difficulty', '').lower()
+                        
+                        # Normalize difficulty to easy/medium/hard
+                        if difficulty not in ['easy', 'medium', 'hard']:
+                            difficulty = None
                         
                         correct_answer_value = card_data.get('correct_answer')
                         
@@ -512,7 +607,8 @@ def import_deck():
                         correct_answer=correct_answer_index,
                         description=description,
                         reference=reference,
-                        code=code
+                        code=code,
+                        difficulty=difficulty
                     )
                     db.session.add(card)
                 
@@ -621,6 +717,63 @@ def stats():
                          today_accuracy=today_accuracy,
                          review_chart_data=review_chart_data,
                          recent_sessions=recent_sessions)
+
+
+@app.route('/api/stats/review-history')
+@login_required
+def api_review_history():
+    """Get review history for specified time range"""
+    days = request.args.get('days', 7, type=int)
+    
+    # Limit to reasonable ranges
+    if days not in [7, 14, 30, 60, 180]:
+        days = 7
+    
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Get review history
+    review_history = db.session.query(
+        func.date(Review.reviewed_at).label('date'),
+        func.count(Review.id).label('count')
+    ).join(Card).join(Deck).filter(
+        Deck.user_id == current_user.id,
+        Review.reviewed_at >= start_date
+    ).group_by(
+        func.date(Review.reviewed_at)
+    ).all()
+    
+    # Format for chart
+    review_data = [{'date': str(r.date), 'count': r.count} for r in review_history]
+    
+    # Get accuracy data
+    accuracy_history = db.session.query(
+        func.date(Review.reviewed_at).label('date'),
+        func.count(Review.id).label('total'),
+        func.sum(
+            db.case(
+                (Review.result == 'correct', 1),
+                else_=0
+            )
+        ).label('correct')
+    ).join(Card).join(Deck).filter(
+        Deck.user_id == current_user.id,
+        Review.reviewed_at >= start_date
+    ).group_by(
+        func.date(Review.reviewed_at)
+    ).all()
+    
+    accuracy_data = [
+        {
+            'date': str(a.date),
+            'accuracy': round((a.correct / a.total * 100), 1) if a.total > 0 else 0
+        } 
+        for a in accuracy_history
+    ]
+    
+    return jsonify({
+        'reviews': review_data,
+        'accuracy': accuracy_data
+    })
 
 
 @app.route('/settings', methods=['GET', 'POST'])

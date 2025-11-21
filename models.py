@@ -21,7 +21,7 @@ class User(UserMixin, db.Model):
     decks = db.relationship('Deck', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -70,26 +70,26 @@ class Deck(db.Model):
         if total_cards == 0:
             return {
                 'total': 0,
-                'new': 0,
-                'learning': 0,
-                'review': 0,
-                'mastered': 0
+                'not_studied': 0,
+                'correct': 0,
+                'incorrect': 0,
+                'trippy': 0
             }
 
-        # Count states by joining progress
+        # Count by last result
         q = db.session.query(Card).outerjoin(CardProgress, Card.id == CardProgress.card_id).filter(Card.deck_id.in_(deck_ids))
 
-        new = q.filter(CardProgress.state == 'new').count()
-        learning = q.filter(CardProgress.state == 'learning').count()
-        review = q.filter(CardProgress.state == 'review').count()
-        mastered = q.filter(CardProgress.state == 'mastered').count()
+        not_studied = q.filter(CardProgress.last_result == None).count()
+        correct = q.filter(CardProgress.last_result == 'correct').count()
+        incorrect = q.filter(CardProgress.last_result == 'incorrect').count()
+        trippy = q.filter(CardProgress.last_result == 'trippy').count()
 
         return {
             'total': total_cards,
-            'new': new,
-            'learning': learning,
-            'review': review,
-            'mastered': mastered
+            'not_studied': not_studied,
+            'correct': correct,
+            'incorrect': incorrect,
+            'trippy': trippy
         }
 
 
@@ -107,6 +107,7 @@ class Card(db.Model):
     description = db.Column(db.Text)  # Explanation after answering
     reference = db.Column(db.String(500))  # URL or reference
     code = db.Column(db.Text)  # Optional code snippet
+    difficulty = db.Column(db.String(20))  # easy, medium, hard
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -121,29 +122,23 @@ class Card(db.Model):
 
 
 class CardProgress(db.Model):
-    """Tracks spaced repetition progress for a card"""
+    """Tracks user progress for a card"""
     __tablename__ = 'card_progress'
     
     id = db.Column(db.Integer, primary_key=True)
     card_id = db.Column(db.Integer, db.ForeignKey('cards.id'), nullable=False, unique=True)
     
-    # Spaced repetition data
-    state = db.Column(db.String(20), default='new')  # new, learning, review, mastered
-    due_date = db.Column(db.DateTime, default=datetime.utcnow)
-    interval = db.Column(db.Integer, default=0)  # Days until next review
-    ease_factor = db.Column(db.Float, default=2.5)  # Ease factor (SM-2 algorithm)
-    repetitions = db.Column(db.Integer, default=0)  # Successful repetitions
-    lapses = db.Column(db.Integer, default=0)  # Times card was forgotten
+    # Simple tracking data
+    correct_count = db.Column(db.Integer, default=0)  # Times answered correctly
+    incorrect_count = db.Column(db.Integer, default=0)  # Times answered incorrectly
+    trippy_count = db.Column(db.Integer, default=0)  # Times marked as trippy
+    last_result = db.Column(db.String(20))  # 'correct', 'incorrect', 'trippy'
     
     last_reviewed = db.Column(db.DateTime)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f'<CardProgress card_id={self.card_id} state={self.state}>'
-    
-    def is_due(self):
-        """Check if card is due for review"""
-        return self.due_date <= datetime.utcnow()
+        return f'<CardProgress card_id={self.card_id} correct={self.correct_count} incorrect={self.incorrect_count} trippy={self.trippy_count}>'
 
 
 class Review(db.Model):

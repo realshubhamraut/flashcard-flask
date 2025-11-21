@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from sqlalchemy import func
 from models import CardProgress, Review, db
 
 
@@ -143,7 +144,7 @@ class SpacedRepetition:
         
         now = datetime.utcnow()
         
-        # Get cards that are due or new
+        # Get cards that are due or new - shuffled for variety
         cards = Card.query.filter_by(deck_id=deck_id).join(
             CardProgress, Card.id == CardProgress.card_id, isouter=True
         ).filter(
@@ -152,7 +153,7 @@ class SpacedRepetition:
                 CardProgress.due_date <= now   # Due cards
             )
         ).order_by(
-            CardProgress.due_date.asc().nullsfirst()
+            func.random()  # Shuffle cards for variety
         ).limit(limit).all()
         
         return cards

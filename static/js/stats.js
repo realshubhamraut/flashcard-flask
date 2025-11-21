@@ -1,13 +1,43 @@
 // Statistics page functionality
 
+let currentDays = 7;
+
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof reviewData !== 'undefined' && reviewData.length > 0) {
-        createReviewChart();
-    }
+    // Setup time range buttons
+    const rangeBtns = document.querySelectorAll('.range-btn');
+    rangeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active from all buttons
+            rangeBtns.forEach(b => b.classList.remove('active'));
+            // Add active to clicked button
+            this.classList.add('active');
+            
+            // Update current days
+            currentDays = parseInt(this.dataset.days);
+            
+            // Reload charts with new range
+            loadReviewData(currentDays);
+        });
+    });
+    
+    // Load initial data
+    loadReviewData(currentDays);
     
     // Load retention chart
     loadRetentionChart();
 });
+
+function loadReviewData(days) {
+    fetch(`/api/stats/review-history?days=${days}`)
+        .then(response => response.json())
+        .then(data => {
+            createReviewChart(data.reviews, days);
+            createAccuracyChart(data.accuracy, days);
+        })
+        .catch(error => {
+            console.error('Error loading review data:', error);
+        });
+}
 
 function loadRetentionChart() {
     fetch('/api/retention-data')
@@ -190,54 +220,218 @@ function createRetentionChart(data) {
     }
 }
 
-function createReviewChart() {
+function createReviewChart(reviewData, days) {
     const canvas = document.getElementById('reviewChart');
-    if (!canvas) return;
+    if (!canvas || !reviewData || reviewData.length === 0) return;
+    
+    // Update period label
+    document.getElementById('chart-period').textContent = `(Last ${days} Days)`;
     
     const ctx = canvas.getContext('2d');
     
-    // Prepare data
-    const labels = reviewData.map(d => {
-        const date = new Date(d.date);
-        return `${date.getMonth() + 1}/${date.getDate()}`;
-    });
-    const data = reviewData.map(d => d.count);
+    // Prepare data - fill in missing dates
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
     
-    const maxValue = Math.max(...data, 10);
-    const height = canvas.height;
+    const allDates = [];
+    const dateMap = new Map();
+    
+    // Create map of existing data
+    reviewData.forEach(d => {
+        dateMap.set(d.date, d.count);
+    });
+    
+    // Fill in all dates
+    const dataPoints = [];
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        allDates.push(`${d.getMonth() + 1}/${d.getDate()}`);
+        dataPoints.push(dateMap.get(dateStr) || 0);
+    }
+    
+    const maxValue = Math.max(...dataPoints, 10);
+    
+    // Setup canvas
+    const theme = document.documentElement.getAttribute('data-theme');
+    const isDark = theme === 'dark';
+    
+    canvas.width = canvas.parentElement.offsetWidth - 40;
+    canvas.height = 300;
+    
     const width = canvas.width;
-    const barWidth = width / labels.length;
-    const padding = 40;
+    const height = canvas.height;
+    const padding = { top: 40, right: 20, bottom: 60, left: 60 };
+    const barWidth = (width - padding.left - padding.right) / dataPoints.length;
     
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
     
+    // Draw grid lines
+    ctx.strokeStyle = isDark ? '#404040' : '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i <= 5; i++) {
+        const value = (maxValue / 5) * i;
+        const y = height - padding.bottom - ((value / maxValue) * (height - padding.top - padding.bottom));
+        
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+        
+        // Y-axis labels
+        ctx.fillStyle = isDark ? '#b0b0b0' : '#757575';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(Math.round(value), padding.left - 10, y + 4);
+    }
+    
     // Draw bars
-    data.forEach((value, index) => {
-        const barHeight = ((value / maxValue) * (height - padding * 2));
-        const x = index * barWidth;
-        const y = height - padding - barHeight;
+    dataPoints.forEach((value, index) => {
+        const barHeight = ((value / maxValue) * (height - padding.top - padding.bottom));
+        const x = padding.left + (index * barWidth);
+        const y = height - padding.bottom - barHeight;
         
         // Bar
-        const theme = document.documentElement.getAttribute('data-theme');
-        ctx.fillStyle = theme === 'dark' ? '#4CAF50' : '#2196F3';
-        ctx.fillRect(x + 5, y, barWidth - 10, barHeight);
-        
-        // Value label
-        ctx.fillStyle = theme === 'dark' ? '#ffffff' : '#333333';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(value, x + barWidth / 2, y - 5);
-        
-        // Date label
-        ctx.fillText(labels[index], x + barWidth / 2, height - 10);
+        ctx.fillStyle = isDark ? '#4CAF50' : '#2196F3';
+        ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
     });
     
-    // Y-axis
-    ctx.strokeStyle = theme === 'dark' ? '#666666' : '#cccccc';
+    // Draw x-axis labels (show fewer labels for readability)
+    ctx.fillStyle = isDark ? '#b0b0b0' : '#757575';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    
+    const labelInterval = Math.ceil(dataPoints.length / 10);
+    for (let i = 0; i < allDates.length; i += labelInterval) {
+        const x = padding.left + (i * barWidth) + (barWidth / 2);
+        ctx.fillText(allDates[i], x, height - padding.bottom + 20);
+    }
+    
+    // Draw axes
+    ctx.strokeStyle = isDark ? '#666666' : '#cccccc';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(padding - 10, padding);
-    ctx.lineTo(padding - 10, height - padding);
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, height - padding.bottom);
+    ctx.lineTo(width - padding.right, height - padding.bottom);
+    ctx.stroke();
+}
+
+function createAccuracyChart(accuracyData, days) {
+    const canvas = document.getElementById('accuracyChart');
+    if (!canvas || !accuracyData || accuracyData.length === 0) return;
+    
+    // Update period label
+    document.getElementById('accuracy-period').textContent = `(Last ${days} Days)`;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Prepare data - fill in missing dates
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    const allDates = [];
+    const dateMap = new Map();
+    
+    // Create map of existing data
+    accuracyData.forEach(d => {
+        dateMap.set(d.date, d.accuracy);
+    });
+    
+    // Fill in all dates
+    const dataPoints = [];
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        allDates.push(`${d.getMonth() + 1}/${d.getDate()}`);
+        const accuracy = dateMap.get(dateStr);
+        dataPoints.push(accuracy !== undefined ? accuracy : null);
+    }
+    
+    // Setup canvas
+    const theme = document.documentElement.getAttribute('data-theme');
+    const isDark = theme === 'dark';
+    
+    canvas.width = canvas.parentElement.offsetWidth - 40;
+    canvas.height = 300;
+    
+    const width = canvas.width;
+    const height = canvas.height;
+    const padding = { top: 40, right: 20, bottom: 60, left: 60 };
+    
+    const graphWidth = width - padding.left - padding.right;
+    const graphHeight = height - padding.top - padding.bottom;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Draw grid lines
+    ctx.strokeStyle = isDark ? '#404040' : '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i <= 5; i++) {
+        const value = i * 20; // 0, 20, 40, 60, 80, 100
+        const y = height - padding.bottom - ((value / 100) * graphHeight);
+        
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+        
+        // Y-axis labels
+        ctx.fillStyle = isDark ? '#b0b0b0' : '#757575';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(value + '%', padding.left - 10, y + 4);
+    }
+    
+    // Draw line chart
+    ctx.strokeStyle = isDark ? '#66BB6A' : '#4CAF50';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    
+    let firstPoint = true;
+    dataPoints.forEach((value, index) => {
+        if (value !== null) {
+            const x = padding.left + (index / (dataPoints.length - 1)) * graphWidth;
+            const y = height - padding.bottom - ((value / 100) * graphHeight);
+            
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(x, y);
+            }
+            
+            // Draw point
+            ctx.fillStyle = isDark ? '#66BB6A' : '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    });
+    ctx.stroke();
+    
+    // Draw x-axis labels
+    ctx.fillStyle = isDark ? '#b0b0b0' : '#757575';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    
+    const labelInterval = Math.ceil(dataPoints.length / 10);
+    for (let i = 0; i < allDates.length; i += labelInterval) {
+        const x = padding.left + (i / (dataPoints.length - 1)) * graphWidth;
+        ctx.fillText(allDates[i], x, height - padding.bottom + 20);
+    }
+    
+    // Draw axes
+    ctx.strokeStyle = isDark ? '#666666' : '#cccccc';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, height - padding.bottom);
+    ctx.lineTo(width - padding.right, height - padding.bottom);
     ctx.stroke();
 }
 
@@ -245,10 +439,7 @@ function createReviewChart() {
 const observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
         if (mutation.attributeName === 'data-theme') {
-            if (typeof reviewData !== 'undefined' && reviewData.length > 0) {
-                createReviewChart();
-            }
-            // Reload retention chart
+            loadReviewData(currentDays);
             loadRetentionChart();
         }
     });

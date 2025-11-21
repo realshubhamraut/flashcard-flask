@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Study - {{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="study-container">
+    <div class="study-header">
+        <div class="study-progress">
+            <span id="current-card">1</span> / <span id="total-cards">{{ cards|length }}</span>
+        </div>
+        <h2>{{ deck.name }}</h2>
+        <button id="end-session" class="btn btn-secondary btn-sm">End Session</button>
+    </div>
+
+    <div id="card-container">
+        {% for card in cards %}
+            <div class="flashcard" data-card-id="{{ card.id }}" data-index="{{ loop.index }}" 
+                 style="{% if loop.index != 1 %}display: none;{% endif %}">
+                
+                <button class="card-delete-btn" onclick="deleteCard({{ card.id }}, event)" title="Delete this card">×</button>
+                
+                <div class="card-question">
+                    <h3>{{ card.question | e }}</h3>
+                </div>
+                
+                {% if card.hint %}
+                    <div class="card-hint">
+                        <button class="hint-toggle" onclick="toggleHint(this)">💡 Show Hint</button>
+                        <div class="hint-content" style="display: none;">
+                            {{ card.hint | e }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if card.code %}
+                    <div class="code-block">
+                        <pre><code class="language-python">{{ card.code | safe }}</code></pre>
+                    </div>
+                {% endif %}
+                
+                {% if card.options and card.options is not mapping and card.options|length > 0 %}
+                    <div class="options">
+                        {% for option in card.options %}
+                            <button class="option-btn" data-index="{{ loop.index0 }}" 
+                                    onclick="selectAnswer(this, {{ card.id }}, {{ card.correct_answer }})">
+                                <span class="option-letter">{{ 'ABCD'[loop.index0] }}</span>
+                                <span class="option-text">{{ option | e }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="show-answer">
+                        <button class="btn btn-primary" onclick="showAnswer({{ card.id }})">Show Answer</button>
+                    </div>
+                {% endif %}
+                
+                <div class="explanation-section" id="explanation-{{ card.id }}" style="display: none;">
+                    {% if card.correct_answer is not none and (not card.options or (card.options is mapping and not card.options)) %}
+                        <div class="card-answer" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">✓ Correct Answer</h4>
+                            <p style="font-size: 1.1rem; font-weight: 600;">{{ 'ABCD'[card.correct_answer] if card.correct_answer < 4 else card.correct_answer }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if card.description %}
+                        <div class="card-description">
+                            <h4>Explanation</h4>
+                            <p>{{ card.description | e }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if card.reference %}
+                        <div class="card-reference">
+                            <strong>Reference:</strong> 
+                            <a href="{{ card.reference }}" target="_blank">{{ card.reference }}</a>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="rating-buttons">
+                        <div class="rating-grid">
+                            <button class="rating-btn rating-again" onclick="rateCard({{ card.id }}, 'again')">
+                                <span class="rating-label">Again</span>
+                                <span class="rating-time" id="time-again-{{ card.id }}">&lt;10m</span>
+                            </button>
+                            <button class="rating-btn rating-hard" onclick="rateCard({{ card.id }}, 'hard')">
+                                <span class="rating-label">Hard</span>
+                                <span class="rating-time" id="time-hard-{{ card.id }}">1d</span>
+                            </button>
+                            <button class="rating-btn rating-good" onclick="rateCard({{ card.id }}, 'good')">
+                                <span class="rating-label">Good</span>
+                                <span class="rating-time" id="time-good-{{ card.id }}">3d</span>
+                            </button>
+                            <button class="rating-btn rating-easy" onclick="rateCard({{ card.id }}, 'easy')">
+                                <span class="rating-label">Easy</span>
+                                <span class="rating-time" id="time-easy-{{ card.id }}">7d</span>
+                            </button>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" style="margin-top: 1rem;" onclick="openScheduleEditor({{ card.id }})">⚙️ Edit Schedule</button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div id="session-complete" style="display: none;">
+        <div class="complete-icon">🎉</div>
+        <h2>Session Complete!</h2>
+        <p>Great work! You've reviewed <span id="cards-reviewed">0</span> cards.</p>
+        <div class="complete-actions">
+            <a href="{{ url_for('deck_detail', deck_id=deck.id) }}" class="btn btn-primary">Back to Deck</a>
+            <a href="{{ url_for('stats') }}" class="btn btn-secondary">View Statistics</a>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Editor Modal -->
+<div id="schedule-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>⚙️ Edit Card Schedule</h2>
+            <button class="modal-close" onclick="closeScheduleEditor()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="card-state">Card State</label>
+                <select id="card-state" class="form-control">
+                    <option value="new">New</option>
+                    <option value="learning">Learning</option>
+                    <option value="review">Review</option>
+                    <option value="mastered">Mastered</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="next-review-date">Next Review Date</label>
+                <input type="datetime-local" id="next-review-date" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="interval-days">Interval (Days)</label>
+                <input type="number" id="interval-days" class="form-control" min="0" value="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="ease-factor">Ease Factor</label>
+                <input type="number" id="ease-factor" class="form-control" min="1.3" max="5.0" step="0.1" value="2.5">
+                <small>Controls how quickly intervals grow (1.3-5.0, default 2.5)</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="repetitions">Successful Repetitions</label>
+                <input type="number" id="repetitions" class="form-control" min="0" value="0">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeScheduleEditor()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveSchedule()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sessionId = {{ session_id }};
+    const deckId = {{ deck.id }};
+    let currentCardIndex = 0;
+    let totalCards = {{ cards|length }};
+    let cardsReviewed = 0;
+    let startTime = Date.now();
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/study.js') }}"></script>
+{% endblock %}

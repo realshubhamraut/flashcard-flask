@@ -8,16 +8,22 @@
         <div class="study-progress">
             <span id="current-card">1</span> / <span id="total-cards">{{ cards|length }}</span>
         </div>
-        <h2>{{ deck.name }}</h2>
+        <h2>{{ deck.name }} <span class="study-mode-badge">{{ mode.title() if mode else 'All' }}</span></h2>
         <button id="end-session" class="btn btn-secondary btn-sm">End Session</button>
     </div>
 
     <div id="card-container">
         {% for card in cards %}
-            <div class="flashcard" data-card-id="{{ card.id }}" data-index="{{ loop.index }}" 
+            <div class="flashcard" data-card-id="{{ card.id }}" data-index="{{ loop.index }}" data-correct-answer="{{ card.correct_answer }}"
                  style="{% if loop.index != 1 %}display: none;{% endif %}">
                 
                 <button class="card-delete-btn" onclick="deleteCard({{ card.id }}, event)" title="Delete this card">×</button>
+                
+                {% if card.difficulty %}
+                <div class="difficulty-tag difficulty-{{ card.difficulty }}">
+                    {{ card.difficulty.upper() }}
+                </div>
+                {% endif %}
                 
                 <div class="card-question">
                     <h3>{{ card.question | e }}</h3>
@@ -27,8 +33,7 @@
                     <div class="card-hint">
                         <button class="hint-toggle" onclick="toggleHint(this)">💡 Show Hint</button>
                         <div class="hint-content" style="display: none;">
-                            {{ card.hint | e }}
-                        </div>
+                            {{ card.hint | e }}</div>
                     </div>
                 {% endif %}
                 
@@ -38,23 +43,36 @@
                     </div>
                 {% endif %}
                 
-                {% if card.options %}
-                    <div class="options">
+                {% if card.options and card.options is not mapping and card.options|length > 0 %}
+                    <div class="options" id="options-{{ card.id }}">
                         {% for option in card.options %}
-                            <button class="option-btn" data-index="{{ loop.index0 }}" 
-                                    onclick="selectAnswer(this, {{ card.id }}, {{ card.correct_answer }})">
-                                <span class="option-letter">{{ 'ABCD'[loop.index0] }}</span>
-                                <span class="option-text">{{ option | e }}</span>
-                            </button>
+                            <div class="option-wrapper" data-index="{{ loop.index0 }}">
+                                <button class="option-btn" 
+                                        data-index="{{ loop.index0 }}"
+                                        onclick="handleOptionClick(this, {{ card.id }}, {{ card.correct_answer }}, {{ loop.index0 }}); return false;">
+                                    <span class="option-letter">{{ 'ABCD'[loop.index0] }}</span>
+                                    <span class="option-text">{{ option | e }}</span>
+                                </button>
+                                <button class="trippy-btn" 
+                                        title="Mark as trippy"
+                                        onclick="handleTrippyClick(this, {{ card.id }}, {{ card.correct_answer }}, {{ loop.index0 }}); return false;">🤔</button>
+                            </div>
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="show-answer">
-                        <button class="btn btn-primary" onclick="showAnswer({{ card.id }})">Show Answer</button>
+                        <button class="btn btn-primary" onclick="showAnswerOnly({{ card.id }})">Show Answer</button>
                     </div>
                 {% endif %}
                 
                 <div class="explanation-section" id="explanation-{{ card.id }}" style="display: none;">
+                    {% if card.correct_answer is not none and (not card.options or (card.options is mapping and not card.options)) %}
+                        <div class="card-answer" style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">✓ Correct Answer</h4>
+                            <p style="font-size: 1.1rem; font-weight: 600;">{{ 'ABCD'[card.correct_answer] if card.correct_answer < 4 else card.correct_answer }}</p>
+                        </div>
+                    {% endif %}
+                    
                     {% if card.description %}
                         <div class="card-description">
                             <h4>Explanation</h4>
@@ -69,26 +87,13 @@
                         </div>
                     {% endif %}
                     
-                    <div class="rating-buttons">
-                        <div class="rating-grid">
-                            <button class="rating-btn rating-again" onclick="rateCard({{ card.id }}, 'again')">
-                                <span class="rating-label">Again</span>
-                                <span class="rating-time" id="time-again-{{ card.id }}">&lt;10m</span>
-                            </button>
-                            <button class="rating-btn rating-hard" onclick="rateCard({{ card.id }}, 'hard')">
-                                <span class="rating-label">Hard</span>
-                                <span class="rating-time" id="time-hard-{{ card.id }}">1d</span>
-                            </button>
-                            <button class="rating-btn rating-good" onclick="rateCard({{ card.id }}, 'good')">
-                                <span class="rating-label">Good</span>
-                                <span class="rating-time" id="time-good-{{ card.id }}">3d</span>
-                            </button>
-                            <button class="rating-btn rating-easy" onclick="rateCard({{ card.id }}, 'easy')">
-                                <span class="rating-label">Easy</span>
-                                <span class="rating-time" id="time-easy-{{ card.id }}">7d</span>
-                            </button>
-                        </div>
-                        <button class="btn btn-secondary btn-sm" style="margin-top: 1rem;" onclick="openScheduleEditor({{ card.id }})">⚙️ Edit Schedule</button>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="nextCardAction()" id="next-btn-{{ card.id }}">Next Card →</button>
+                        {% if mode in ['trippy', 'missed'] %}
+                        <button class="btn btn-success" onclick="markAsCleared({{ card.id }}, event)" title="Remove from {{ mode }} list">
+                            ✓ Mark as Mastered
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -98,70 +103,308 @@
     <div id="session-complete" style="display: none;">
         <div class="complete-icon">🎉</div>
         <h2>Session Complete!</h2>
-        <p>Great work! You've reviewed <span id="cards-reviewed">0</span> cards.</p>
-        <div class="complete-actions">
-            <a href="{{ url_for('deck_detail', deck_id=deck.id) }}" class="btn btn-primary">Back to Deck</a>
-            <a href="{{ url_for('stats') }}" class="btn btn-secondary">View Statistics</a>
-        </div>
-    </div>
-</div>
-
-<!-- Schedule Editor Modal -->
-<div id="schedule-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>⚙️ Edit Card Schedule</h2>
-            <button class="modal-close" onclick="closeScheduleEditor()">×</button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label for="card-state">Card State</label>
-                <select id="card-state" class="form-control">
-                    <option value="new">New</option>
-                    <option value="learning">Learning</option>
-                    <option value="review">Review</option>
-                    <option value="mastered">Mastered</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="next-review-date">Next Review Date</label>
-                <input type="datetime-local" id="next-review-date" class="form-control">
-            </div>
-            
-            <div class="form-group">
-                <label for="interval-days">Interval (Days)</label>
-                <input type="number" id="interval-days" class="form-control" min="0" value="1">
-            </div>
-            
-            <div class="form-group">
-                <label for="ease-factor">Ease Factor</label>
-                <input type="number" id="ease-factor" class="form-control" min="1.3" max="5.0" step="0.1" value="2.5">
-                <small>Controls how quickly intervals grow (1.3-5.0, default 2.5)</small>
-            </div>
-            
-            <div class="form-group">
-                <label for="repetitions">Successful Repetitions</label>
-                <input type="number" id="repetitions" class="form-control" min="0" value="0">
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeScheduleEditor()">Cancel</button>
-            <button class="btn btn-primary" onclick="saveSchedule()">Save Changes</button>
-        </div>
+        <p>Great work! You've completed this study session.</p>
+        <div class="session-stats" id="session-stats"></div>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+        <a href="{{ url_for('deck_detail', deck_id=deck.id) }}" class="btn btn-secondary">View Deck</a>
     </div>
 </div>
 
 <script>
-    const sessionId = {{ session_id }};
-    const deckId = {{ deck.id }};
-    let currentCardIndex = 0;
-    let totalCards = {{ cards|length }};
-    let cardsReviewed = 0;
-    let startTime = Date.now();
-</script>
-{% endblock %}
+const sessionId = {{ session_id }};
+let currentCardIndex = 0;
+let totalCards = {{ cards|length }};
+let cardsReviewed = 0;
+let cardStartTime = Date.now();
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/study.js') }}"></script>
+// FALLBACK selectAnswer function if study.js doesn't load
+function selectAnswer(wrapper, cardId, correctAnswer, selectedIndex, isTrippy) {
+    console.log('selectAnswer called:', {wrapper, cardId, correctAnswer, selectedIndex, isTrippy});
+    
+    const container = wrapper.parentElement;
+    const allWrappers = container.querySelectorAll('.option-wrapper');
+    
+    // Disable all options
+    allWrappers.forEach(w => {
+        const btn = w.querySelector('.option-btn');
+        const trippy = w.querySelector('.trippy-btn');
+        btn.disabled = true;
+        trippy.disabled = true;
+        trippy.style.display = 'none';
+        
+        const idx = parseInt(btn.dataset.index);
+        
+        if (idx === correctAnswer) {
+            btn.classList.add('correct');
+        } else if (idx === selectedIndex) {
+            btn.classList.add('incorrect');
+        }
+    });
+    
+    // Determine result
+    let result;
+    if (isTrippy) {
+        result = 'trippy';
+        wrapper.querySelector('.option-btn').classList.add('trippy-marked');
+    } else if (selectedIndex === correctAnswer) {
+        result = 'correct';
+    } else {
+        result = 'incorrect';
+    }
+    
+    console.log('Result:', result);
+    
+    // Show explanation
+    showAnswer(cardId, result);
+}
+
+function showAnswer(cardId, result) {
+    const explanation = document.getElementById(`explanation-${cardId}`);
+    explanation.style.display = 'block';
+    
+    // Record the result
+    recordReview(cardId, result);
+    
+    // Scroll to explanation
+    setTimeout(() => {
+        explanation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+}
+
+function recordReview(cardId, result) {
+    const duration = Math.floor((Date.now() - cardStartTime) / 1000);
+    
+    console.log('Recording review:', {cardId, result, duration, sessionId});
+    
+    fetch('/api/review', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            card_id: cardId,
+            result: result,
+            duration: duration,
+            session_id: sessionId
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            cardsReviewed++;
+            console.log(`Card reviewed: ${result}. Counts - Correct: ${data.correct_count}, Incorrect: ${data.incorrect_count}, Trippy: ${data.trippy_count}`);
+        } else {
+            console.error('Review failed:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error recording review:', error);
+        alert('Failed to record your answer. Please check your connection and try again.');
+    });
+}
+
+// DIRECT ONCLICK HANDLERS - SIMPLE AND GUARANTEED TO WORK
+function handleOptionClick(button, cardId, correctAnswer, index) {
+    console.log('ONCLICK HANDLER - Option clicked:', {cardId, correctAnswer, index});
+    
+    if (button.disabled) {
+        console.log('Button already disabled');
+        return false;
+    }
+    
+    const wrapper = button.closest('.option-wrapper');
+    selectAnswer(wrapper, cardId, correctAnswer, index, false);
+    return false;
+}
+
+function handleTrippyClick(button, cardId, correctAnswer, index) {
+    console.log('ONCLICK HANDLER - Trippy clicked:', {cardId, correctAnswer, index});
+    
+    if (button.disabled) {
+        console.log('Trippy button already disabled');
+        return false;
+    }
+    
+    const wrapper = button.closest('.option-wrapper');
+    selectAnswer(wrapper, cardId, correctAnswer, index, true);
+    return false;
+}
+
+// Next card functionality
+function nextCardAction() {
+    nextCard();
+}
+
+function nextCard() {
+    const cards = document.querySelectorAll('.flashcard');
+    const currentCard = cards[currentCardIndex];
+    
+    currentCardIndex++;
+    
+    if (currentCardIndex < totalCards) {
+        // Hide current card
+        currentCard.style.display = 'none';
+        
+        // Show next card
+        const nextCard = cards[currentCardIndex];
+        nextCard.style.display = 'block';
+        
+        // Update progress
+        document.getElementById('current-card').textContent = currentCardIndex + 1;
+        
+        // Reset timer
+        cardStartTime = Date.now();
+    } else {
+        // Session complete
+        endStudySession();
+    }
+}
+
+function endStudySession() {
+    document.getElementById('card-container').style.display = 'none';
+    document.querySelector('.study-header').style.display = 'none';
+    document.getElementById('session-complete').style.display = 'block';
+    
+    // Update session stats
+    document.getElementById('session-stats').innerHTML = `
+        <p>Cards reviewed: ${cardsReviewed} / ${totalCards}</p>
+    `;
+}
+
+// Mark as Mastered functionality
+function markAsCleared(cardId, event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (!confirm('Mark this card as mastered? It will be removed from this review list.')) {
+        return;
+    }
+    
+    fetch(`/api/card/${cardId}/clear_status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const card = document.querySelector(`[data-card-id="${cardId}"]`);
+            const explanation = card.querySelector('.explanation-section');
+            
+            // Add success message
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'background: var(--success); color: white; padding: 0.75rem; border-radius: 8px; margin-top: 1rem; text-align: center;';
+            successMsg.innerHTML = '✓ Card marked as mastered! Moving to next...';
+            explanation.insertBefore(successMsg, explanation.querySelector('.action-buttons'));
+            
+            // Auto-advance to next card after 1.5 seconds
+            setTimeout(() => {
+                nextCard();
+            }, 1500);
+        } else {
+            alert('Failed to clear card status: ' + (data.message || data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to clear card status. Please try again.');
+    });
+}
+
+// Hint toggle functionality
+function toggleHint(button) {
+    const hintContent = button.nextElementSibling;
+    if (hintContent.style.display === 'none') {
+        hintContent.style.display = 'block';
+        button.textContent = '💡 Hide Hint';
+    } else {
+        hintContent.style.display = 'none';
+        button.textContent = '💡 Show Hint';
+    }
+}
+
+// Show answer for non-MCQ cards
+function showAnswerOnly(cardId) {
+    const explanation = document.getElementById(`explanation-${cardId}`);
+    explanation.style.display = 'block';
+    
+    setTimeout(() => {
+        explanation.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+}
+
+// Delete card functionality
+function deleteCard(cardId, event) {
+    event.stopPropagation();
+    
+    if (!confirm('Are you sure you want to delete this card? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/api/card/${cardId}/delete`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Find current card and remove it
+            const cards = document.querySelectorAll('.flashcard');
+            const currentCard = cards[currentCardIndex];
+            
+            // Adjust total cards
+            totalCards--;
+            document.getElementById('total-cards').textContent = totalCards;
+            
+            if (totalCards === 0) {
+                // No more cards
+                alert('No more cards in this session!');
+                window.location.href = '/';
+            } else {
+                // Move to next card without incrementing index
+                currentCard.remove();
+                const remainingCards = document.querySelectorAll('.flashcard');
+                
+                if (currentCardIndex >= remainingCards.length) {
+                    currentCardIndex = remainingCards.length - 1;
+                }
+                
+                remainingCards[currentCardIndex].style.display = 'block';
+                document.getElementById('current-card').textContent = currentCardIndex + 1;
+                cardStartTime = Date.now();
+            }
+        } else {
+            alert('Failed to delete card: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete card. Please try again.');
+    });
+}
+
+// End session button
+document.addEventListener('DOMContentLoaded', function() {
+    const endBtn = document.getElementById('end-session');
+    if (endBtn) {
+        endBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to end this study session?')) {
+                window.location.href = "{{ url_for('index') }}";
+            }
+        });
+    }
+});
+
+console.log('All inline functions loaded successfully');
+</script>
+<script src="{{ url_for('static', filename='js/study.js') }}?v={{ range(1, 10000) | random }}"></script>
 {% endblock %}

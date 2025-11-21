@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Study Mode - {{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Choose Study Mode</h1>
+    <p>{{ deck.name }}</p>
+</div>
+
+<div class="study-mode-container">
+    <div class="study-mode-card" onclick="window.location.href='{{ url_for('study', deck_id=deck.id, mode='all') }}'">
+        <div class="mode-icon">📚</div>
+        <h2>Study Entirely</h2>
+        <p class="mode-description">Study all cards in this deck</p>
+        <div class="mode-count">{{ all_cards }} cards</div>
+        <button class="btn btn-primary">Start</button>
+    </div>
+
+    <div class="study-mode-card" onclick="window.location.href='{{ url_for('study', deck_id=deck.id, mode='trippy') }}'">
+        <div class="mode-icon">🤔</div>
+        <h2>Study Only Trippy</h2>
+        <p class="mode-description">Review cards you marked as tricky</p>
+        <div class="mode-count">{{ trippy_cards }} cards</div>
+        <button class="btn btn-primary" {% if trippy_cards == 0 %}disabled{% endif %}>Start</button>
+    </div>
+
+    <div class="study-mode-card" onclick="window.location.href='{{ url_for('study', deck_id=deck.id, mode='missed') }}'">
+        <div class="mode-icon">❌</div>
+        <h2>Study Missed</h2>
+        <p class="mode-description">Review cards you got wrong</p>
+        <div class="mode-count">{{ missed_cards }} cards</div>
+        <button class="btn btn-primary" {% if missed_cards == 0 %}disabled{% endif %}>Start</button>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="{{ url_for('deck_detail', deck_id=deck.id) }}" class="btn btn-secondary">Back to Deck</a>
+</div>
+
+<style>
+.study-mode-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.study-mode-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.study-mode-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--shadow);
+    border-color: var(--accent-primary);
+}
+
+.mode-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.study-mode-card h2 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.mode-description {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.mode-count {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 1.5rem;
+}
+
+.study-mode-card button {
+    width: 100%;
+    pointer-events: none; /* Button inside clickable card */
+}
+</style>
+{% endblock %}
