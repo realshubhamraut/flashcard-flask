@@ -34,7 +34,7 @@
                 
                 {% if card.code %}
                     <div class="code-block">
-                        <pre><code class="language-python">{{ card.code | safe }}</code></pre>
+                        <pre><code class="language-python">{{ card.code | e }}</code></pre>
                     </div>
                 {% endif %}
                 

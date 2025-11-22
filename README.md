@@ -42,6 +42,45 @@ A full-stack spaced repetition quiz web application built entirely with Python a
 
 Each user has their own isolated decks and progress tracking.
 
+## AI-Powered Flashcard Generation
+
+This app includes AI-powered flashcard generation using Google Gemini API.
+
+### Setup Gemini API Key
+
+1. Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Set the environment variable:
+
+**Local Development:**
+```bash
+export GEMINI_API_KEY='your-api-key-here'
+```
+
+**On Render (Production):**
+1. Go to your Render dashboard
+2. Select your web service
+3. Go to "Environment" tab
+4. Add environment variable:
+   - Key: `GEMINI_API_KEY`
+   - Value: Your Gemini API key
+5. Save changes (app will redeploy automatically)
+
+### Using AI Generation
+
+1. Open any deck
+2. Click "🤖 Generate AI Cards" button
+3. Select a module from the syllabus (e.g., "Big Data Technologies")
+4. Optionally select a specific topic
+5. Choose number of cards (up to 100)
+6. Select difficulty level
+7. Click "Generate" and wait for AI to create the cards
+
+The AI will generate high-quality flashcards with:
+- Multiple choice questions
+- Code examples (where applicable)
+- Detailed explanations
+- Appropriate difficulty level
+
 ## JSON Deck Format
 
 ### Simple Format (Array of Cards):

@@ -107,15 +107,24 @@
 </div>
 
 <div class="deck-actions-large">
-    {% if due_count > 0 %}
-        <a href="{{ url_for('study', deck_id=deck.id) }}" class="btn btn-primary btn-lg">
-            Study {{ due_count }} Card{{ 's' if due_count != 1 else '' }}
-        </a>
+    {% if stats['total'] > 0 %}
+        {% if due_count > 0 %}
+            <a href="{{ url_for('study', deck_id=deck.id) }}" class="btn btn-primary btn-lg">
+                Study {{ due_count }} Card{{ 's' if due_count != 1 else '' }}
+            </a>
+        {% else %}
+            <a href="{{ url_for('study', deck_id=deck.id) }}" class="btn btn-primary btn-lg">
+                Study Deck ({{ stats['total'] }} cards)
+            </a>
+        {% endif %}
     {% else %}
         <div class="info-message">
-            <p>✅ All cards are up to date! Check back later for reviews.</p>
+            <p>No cards in this deck.</p>
         </div>
     {% endif %}
+    <button onclick="openAIGeneratorModal()" class="btn btn-primary btn-lg">
+        🤖 Generate AI Cards
+    </button>
     <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Decks</a>
 </div>
 
@@ -192,5 +201,212 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// AI Generator Modal Functions
+function openAIGeneratorModal() {
+    const modal = document.getElementById('ai-generator-modal');
+    modal.style.display = 'flex';
+    loadModules();
+}
+
+function closeAIGeneratorModal() {
+    const modal = document.getElementById('ai-generator-modal');
+    modal.style.display = 'none';
+    resetAIGeneratorForm();
+}
+
+function resetAIGeneratorForm() {
+    document.getElementById('ai-module-select').value = '';
+    document.getElementById('ai-topic-select').value = '';
+    document.getElementById('ai-topic-select').disabled = true;
+    document.getElementById('ai-num-cards').value = '50';
+    document.querySelector('input[name="difficulty"][value="medium"]').checked = true;
+    document.getElementById('ai-progress-container').style.display = 'none';
+    document.getElementById('ai-progress-message').textContent = '';
+    document.getElementById('generate-btn').disabled = false;
+}
+
+function loadModules() {
+    fetch('/api/ai/modules')
+        .then(response => response.json())
+        .then(data => {
+            const moduleSelect = document.getElementById('ai-module-select');
+            moduleSelect.innerHTML = '<option value="">Select a module...</option>';
+            
+            if (data.modules && data.modules.length > 0) {
+                data.modules.forEach(module => {
+                    const option = document.createElement('option');
+                    option.value = module;
+                    option.textContent = module;
+                    moduleSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading modules:', error);
+            alert('Failed to load modules. Please try again.');
+        });
+}
+
+function onModuleChange() {
+    const module = document.getElementById('ai-module-select').value;
+    const topicSelect = document.getElementById('ai-topic-select');
+    
+    if (module) {
+        fetch(`/api/ai/modules/${encodeURIComponent(module)}/topics`)
+            .then(response => response.json())
+            .then(data => {
+                topicSelect.innerHTML = '<option value="">All topics (optional)</option>';
+                
+                if (data.topics && data.topics.length > 0) {
+                    data.topics.forEach(topic => {
+                        const option = document.createElement('option');
+                        option.value = topic;
+                        option.textContent = topic;
+                        topicSelect.appendChild(option);
+                    });
+                }
+                topicSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading topics:', error);
+                topicSelect.disabled = true;
+            });
+    } else {
+        topicSelect.innerHTML = '<option value="">All topics (optional)</option>';
+        topicSelect.disabled = true;
+    }
+}
+
+function generateAICards() {
+    const module = document.getElementById('ai-module-select').value;
+    const topic = document.getElementById('ai-topic-select').value;
+    const numCards = parseInt(document.getElementById('ai-num-cards').value);
+    const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+    const deckId = document.getElementById('ai-generator-modal').dataset.deckId;
+    
+    if (!module) {
+        alert('Please select a module');
+        return;
+    }
+    
+    if (numCards < 1 || numCards > 100) {
+        alert('Number of cards must be between 1 and 100');
+        return;
+    }
+    
+    // Show progress indicator
+    document.getElementById('ai-progress-container').style.display = 'block';
+    document.getElementById('ai-progress-message').textContent = 'Generating flashcards...';
+    document.getElementById('generate-btn').disabled = true;
+    
+    // Make API call
+    fetch(`/api/ai/generate/${deckId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            module: module,
+            topic: topic || null,
+            num_cards: numCards,
+            difficulty: difficulty
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('ai-progress-message').textContent = 
+                `Successfully generated ${data.cards_generated} cards!`;
+            
+            setTimeout(() => {
+                closeAIGeneratorModal();
+                location.reload(); // Reload to show new cards
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Failed to generate cards');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('ai-progress-message').textContent = 
+            'Error: ' + error.message;
+        document.getElementById('generate-btn').disabled = false;
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('ai-generator-modal');
+    if (event.target === modal) {
+        closeAIGeneratorModal();
+    }
+}
 </script>
+
+<!-- AI Flashcard Generator Modal -->
+<div id="ai-generator-modal" class="modal" style="display: none;" data-deck-id="{{ deck.id }}">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🤖 Generate Flashcards with AI</h2>
+            <button class="modal-close" onclick="closeAIGeneratorModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 1.5rem;">
+                <label for="ai-module-select" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Module *</label>
+                <select id="ai-module-select" onchange="onModuleChange()" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 1rem;">
+                    <option value="">Select a module...</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="ai-topic-select" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Topic (Optional)</label>
+                <select id="ai-topic-select" disabled style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 1rem;">
+                    <option value="">All topics (optional)</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="ai-num-cards" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Number of Cards (1-100)</label>
+                <input type="number" id="ai-num-cards" min="1" max="100" value="50" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); font-size: 1rem;">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Difficulty</label>
+                <div style="display: flex; gap: 1.5rem; margin-top: 0.75rem;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="difficulty" value="easy" style="margin-right: 0.5rem;">
+                        <span>Easy</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="difficulty" value="medium" checked style="margin-right: 0.5rem;">
+                        <span>Medium</span>
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="difficulty" value="hard" style="margin-right: 0.5rem;">
+                        <span>Hard</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="ai-progress-container" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 20px; height: 20px; border: 2px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p id="ai-progress-message" style="margin: 0; color: var(--text-primary);"></p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeAIGeneratorModal()" class="btn btn-secondary">Close</button>
+            <button id="generate-btn" onclick="generateAICards()" class="btn btn-primary">Generate</button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+
 {% endblock %}

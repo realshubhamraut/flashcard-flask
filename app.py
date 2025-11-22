@@ -9,6 +9,7 @@ from sqlalchemy import func
 from config import Config
 from models import db, User, Deck, Card, CardProgress, Review, StudySession, SpacedRepetitionSettings
 from spaced_repetition import SpacedRepetition
+from ai_generator import GeminiFlashcardGenerator, SYLLABUS_MODULES
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -560,44 +561,79 @@ def import_deck():
                         
                     else:
                         # Get options and clean up any [cite_start] markers for Payal's format
-                        options = card_data.get('options')
-                        
+                        raw_options = card_data.get('options')
+
                         # For Payal's format, clean up the description and hint from citation markers
                         description = card_data.get('description', '')
                         hint = card_data.get('hint', '')
-                        question = card_data.get('question')
-                        reference = card_data.get('reference')
-                        code = card_data.get('code')
-                        difficulty = card_data.get('difficulty', '').lower()  # For Shubham's format
-                        
+                        # Support both 'question' and 'question_text'
+                        question = (card_data.get('question') or card_data.get('question_text') or '').strip()
+                        reference = card_data.get('reference') or card_data.get('source_url') or ''
+
+                        # Normalize difficulty field if present
+                        difficulty = (card_data.get('difficulty') or '').lower().strip()
                         if format_type == 'payal':
                             # Remove [cite_start] markers and clean citations
                             if description:
                                 description = description.replace('[cite_start]', '').strip()
                             if hint:
                                 hint = hint.replace('[cite_start]', '').strip()
-                            # Payal's format has difficulty field
-                            difficulty = card_data.get('difficulty', '').lower()
-                        
-                        # Normalize difficulty to easy/medium/hard
+                            difficulty = (card_data.get('difficulty') or '').lower()
+
                         if difficulty not in ['easy', 'medium', 'hard']:
                             difficulty = None
-                        
-                        correct_answer_value = card_data.get('correct_answer')
-                        
-                        # Handle correct_answer - support both index (int) and string value
+
+                        # Normalize options: support dict (letter keys) or list
+                        options = None
+                        if isinstance(raw_options, dict):
+                            options = []
+                            letter_to_index = {}
+                            for letter in ['a', 'b', 'c', 'd', 'e', 'f']:
+                                opt_text = (raw_options.get(letter) or '').strip()
+                                if opt_text:
+                                    letter_to_index[letter] = len(options)
+                                    options.append(opt_text)
+                        elif isinstance(raw_options, list):
+                            options = [o for o in raw_options if o is not None]
+
+                        # Extract code from multiple possible fields
+                        code = None
+                        for key in ['code', 'code_blocks', 'code_block', 'example_code', 'examples', 'sample_code', 'codeExample', 'codeExamples']:
+                            if key in card_data and card_data.get(key):
+                                val = card_data.get(key)
+                                if isinstance(val, list):
+                                    code = '\n\n'.join(str(x) for x in val if x)
+                                else:
+                                    code = str(val)
+                                break
+
+                        # Fallback: sometimes 'explanation' contains code blocks marked with backticks — leave as description
+
+                        correct_answer_value = card_data.get('correct_answer') or card_data.get('answer')
+
+                        # Handle correct_answer - support both index (int) and string value (letter or exact option)
                         correct_answer_index = None
                         if options and correct_answer_value is not None:
                             if isinstance(correct_answer_value, int):
-                                # Already an index
                                 correct_answer_index = correct_answer_value
                             elif isinstance(correct_answer_value, str):
-                                # Convert string answer to index
-                                try:
-                                    correct_answer_index = options.index(correct_answer_value)
-                                except ValueError:
-                                    # If exact match not found, keep as None or use first match
-                                    correct_answer_index = None
+                                ans = correct_answer_value.strip().lower()
+                                # If single-letter, map via ordered letters
+                                if len(ans) == 1 and ans in 'abcdef' and isinstance(raw_options, dict):
+                                    mapping = {l: i for i, l in enumerate([l for l in ['a','b','c','d','e','f'] if (raw_options.get(l) or '').strip()])}
+                                    correct_answer_index = mapping.get(ans)
+                                else:
+                                    # Try matching option text
+                                    try:
+                                        correct_answer_index = options.index(correct_answer_value)
+                                    except ValueError:
+                                        # try case-insensitive match
+                                        found = None
+                                        for i, opt in enumerate(options):
+                                            if isinstance(opt, str) and opt.strip().lower() == ans:
+                                                found = i
+                                                break
+                                        correct_answer_index = found
                     
                     card = Card(
                         deck_id=deck.id,
@@ -1060,6 +1096,116 @@ def end_session(session_id):
         'cards_studied': session.cards_studied,
         'accuracy': session.accuracy
     })
+
+
+@app.route('/api/ai/modules', methods=['GET'])
+@login_required
+def get_ai_modules():
+    """Get available modules and topics from AI generator"""
+    modules = []
+    for module_name, module_info in SYLLABUS_MODULES.items():
+        modules.append({
+            'name': module_name,
+            'hours': module_info['hours'],
+            'topics': module_info['topics']
+        })
+    
+    return jsonify({
+        'success': True,
+        'modules': modules
+    })
+
+
+@app.route('/api/ai/generate-cards', methods=['POST'])
+@login_required
+def generate_ai_cards():
+    """Generate flashcards using Gemini API"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        deck_id = data.get('deck_id')
+        module_name = data.get('module_name')
+        topic = data.get('topic')  # Optional
+        count = data.get('count', 50)
+        difficulty = data.get('difficulty', 'medium')
+        
+        if not deck_id or not module_name:
+            return jsonify({
+                'error': 'deck_id and module_name are required'
+            }), 400
+        
+        # Verify user owns the deck
+        deck = Deck.query.get_or_404(deck_id)
+        if deck.user_id != current_user.id:
+            return jsonify({
+                'error': 'Unauthorized access to deck'
+            }), 403
+        
+        # Initialize Gemini generator
+        generator = GeminiFlashcardGenerator()
+        
+        # Generate flashcards
+        flashcards = generator.generate_flashcards(
+            module_name=module_name,
+            topic=topic,
+            count=count,
+            difficulty=difficulty
+        )
+        
+        # Insert generated cards into the deck
+        cards_added = 0
+        for flashcard_data in flashcards:
+            # Convert correct_answer letter (a-d) to index (0-3)
+            correct_letter = flashcard_data.get('correct_answer', 'a').lower()
+            correct_index = ord(correct_letter) - ord('a')
+            
+            # Convert options dict to array
+            options_dict = flashcard_data.get('options', {})
+            options_array = [
+                options_dict.get('a', ''),
+                options_dict.get('b', ''),
+                options_dict.get('c', ''),
+                options_dict.get('d', '')
+            ] if options_dict else None
+            
+            # Join code_blocks array into single string
+            code_blocks = flashcard_data.get('code_blocks', [])
+            code_string = '\n\n'.join(code_blocks) if code_blocks else None
+            
+            card = Card(
+                deck_id=deck_id,
+                question=flashcard_data.get('question_text', ''),
+                hint=flashcard_data.get('hint'),
+                options=options_array,
+                correct_answer=correct_index,
+                description=flashcard_data.get('explanation', ''),
+                reference=flashcard_data.get('reference'),
+                code=code_string,
+                difficulty=flashcard_data.get('difficulty', 'medium')
+            )
+            db.session.add(card)
+            cards_added += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'cards_generated': cards_added,
+            'deck_id': deck_id,
+            'module': module_name,
+            'topic': topic
+        })
+        
+    except ValueError as e:
+        return jsonify({
+            'error': str(e)
+        }), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': f'Failed to generate cards: {str(e)}'
+        }), 500
 
 
 @app.template_filter('timeago')
