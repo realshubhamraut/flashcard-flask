@@ -1,0 +1,396 @@
+CLASS 11 (FYJC) - SCIENCE STREAM
+
+
+1. PHYSICS (Class 11)
+
+	•	1. Units and Measurements
+	◦	System of Units (CGS, MKS, FPS, SI)
+	◦	Fundamental and Derived Quantities
+	◦	Conventions for the use of SI Units
+	◦	Dimensions and Dimensional Analysis (Applications and Limitations)
+	◦	Accuracy, Precision, and Uncertainty in Measurement
+	◦	Errors in Measurements (Systematic, Random, Estimation of Error)
+	◦	Significant Figures
+	•	2. Mathematical Methods
+	◦	Scalars and Vectors
+	◦	Vector Operations (Addition, Subtraction, Triangle Law, Parallelogram Law)
+	◦	Resolution of Vectors
+	◦	Multiplication of Vectors (Scalar/Dot Product, Vector/Cross Product)
+	◦	Introduction to Calculus (Differential and Integral Calculus basics for Physics)
+	•	3. Motion in a Plane
+	◦	Rectilinear Motion vs. Motion in Two Dimensions
+	◦	Average and Instantaneous Velocity/Acceleration
+	◦	Equations of Motion for Uniform Acceleration
+	◦	Relative Velocity
+	◦	Projectile Motion (Equation of trajectory, Time of flight, Range, Height)
+	◦	Uniform Circular Motion (Period, Radius Vector, Angular Speed)
+	•	4. Laws of Motion
+	◦	Aristotle’s Fallacy and Newton’s Laws of Motion
+	◦	Inertial and Non-Inertial Frames of Reference
+	◦	Types of Forces (Fundamental, Contact, Non-Contact, Real, Pseudo)
+	◦	Conservation of Linear Momentum
+	◦	Work-Energy Theorem
+	◦	Collisions (Elastic, Inelastic, Coefficient of Restitution)
+	◦	Impulse and Rotational Analogue of Force (Torque/Couple)
+	•	5. Gravitation
+	◦	Kepler’s Laws of Planetary Motion
+	◦	Universal Law of Gravitation
+	◦	Acceleration due to Gravity ($g$)
+	◦	Variation of $g$ with Altitude, Depth, and Latitude
+	◦	Gravitational Potential and Potential Energy
+	◦	Escape Velocity
+	◦	Earth Satellites and Projection of Satellites
+	•	6. Mechanical Properties of Solids
+	◦	Elastic behavior of solids
+	◦	Stress and Strain (Longitudinal, Volume, Shearing)
+	◦	Hooke’s Law
+	◦	Elastic Moduli (Young’s Modulus, Bulk Modulus, Modulus of Rigidity)
+	◦	Poisson’s Ratio
+	◦	Strain Energy
+	◦	Hardness, Brittleness, Toughness, Malleability, Ductility
+	•	7. Thermal Properties of Matter
+	◦	Temperature and Heat
+	◦	Measurement of Temperature
+	◦	Thermal Expansion (Linear, Areal, Volume)
+	◦	Specific Heat Capacity and Calorimetry
+	◦	Change of State (Latent Heat of Fusion/Vaporization)
+	◦	Heat Transfer (Conduction, Convection, Radiation)
+	◦	Newton’s Law of Cooling
+	•	8. Sound
+	◦	Types of Waves (Mechanical, EM, Transverse, Longitudinal)
+	◦	Common Properties of all Waves (Amplitude, Wavelength, Frequency)
+	◦	Velocity of Sound in different media
+	◦	Factors affecting velocity of sound
+	◦	Echo, Reverberation, and Acoustics
+	◦	Doppler Effect in Sound
+	•	9. Optics
+	◦	Nature of Light (Ray Optics)
+	◦	Reflection (Plane and Spherical Mirrors)
+	◦	Refraction (Snell's Law, Absolute/Relative Refractive Index)
+	◦	Total Internal Reflection (TIR) and Optical Fibers
+	◦	Refraction at Spherical Surfaces and Lenses
+	◦	Prism Formula
+	◦	Dispersion of Light (Rainbows)
+	◦	Optical Instruments (Simple/Compound Microscope, Telescope)
+	•	10. Electrostatics
+	◦	Electric Charge (Quantization, Conservation)
+	◦	Coulomb’s Law
+	◦	Principle of Superposition
+	◦	Electric Field and Electric Lines of Force
+	◦	Electric Flux and Gauss’s Law
+	◦	Electric Dipole (Field due to dipole)
+	◦	Continuous Charge Distribution
+	•	11. Electric Current Through Conductors
+	◦	Electric Current and Drift Speed
+	◦	Ohm’s Law and Electrical Resistance
+	◦	Resistivity and Conductivity
+	◦	Color Code for Resistors
+	◦	Rheostat
+	◦	Resistors in Series and Parallel
+	◦	EMF and Internal Resistance of a Cell
+	•	12. Magnetism
+	◦	Magnetic Lines of Force
+	◦	Bar Magnet (Magnetic Dipole Moment)
+	◦	Electrostatic Analogue
+	◦	Gauss’ Law of Magnetism
+	◦	Earth’s Magnetism (Elements of Earth's Magnetic Field)
+	•	13. Electromagnetic Waves and Communication System
+	◦	Displacement Current
+	◦	Characteristics of EM Waves
+	◦	Electromagnetic Spectrum
+	◦	Propagation of EM Waves (Ground, Sky, Space waves)
+	◦	Introduction to Communication Systems (Modulation)
+	•	14. Semiconductors
+	◦	Electrical conduction in solids (Band Theory)
+	◦	Intrinsic and Extrinsic Semiconductors (n-type, p-type)
+	◦	p-n Junction Diode (Biasing: Forward and Reverse)
+	◦	Semiconductor Devices (Rectifiers)
+
+
+2. CHEMISTRY (Class 11)
+
+	•	1. Some Basic Concepts of Chemistry
+	◦	Nature of Chemistry and Matter
+	◦	Laws of Chemical Combination
+	◦	Dalton's Atomic Theory
+	◦	Atomic and Molecular Masses
+	◦	Mole Concept and Molar Mass
+	◦	Moles and Gases
+	•	2. Introduction to Analytical Chemistry
+	◦	Scientific Notation and Significant Figures
+	◦	Error in Analytical Measurement
+	◦	Determination of Molecular Formula (Empirical Formula)
+	◦	Chemical Stoichiometry
+	◦	Limiting Reagent
+	•	3. Basic Analytical Techniques
+	◦	Purification of Solids (Filtration, Crystallization, Sublimation)
+	◦	Distillation (Simple, Fractional, Vacuum, Steam)
+	◦	Solvent Extraction
+	◦	Chromatographic Techniques
+	•	4. Structure of Atom
+	◦	Subatomic Particles (Discovery of Electron, Proton, Neutron)
+	◦	Atomic Number and Mass Number
+	◦	Isotopes, Isobars, Isotones
+	◦	Bohr’s Atomic Model and Hydrogen Spectrum
+	◦	Quantum Mechanical Model (Dual nature, Heisenberg Uncertainty)
+	◦	Quantum Numbers and Shapes of Orbitals
+	◦	Electronic Configuration (Aufbau, Pauli, Hund’s Rule)
+	•	5. Chemical Bonding
+	◦	Kossel-Lewis Approach (Octet Rule)
+	◦	Ionic Bond and Covalent Bond
+	◦	Valence Shell Electron Pair Repulsion (VSEPR) Theory
+	◦	Valence Bond Theory (VBT)
+	◦	Hybridization ($sp, sp^2, sp^3, sp^3d$)
+	◦	Molecular Orbital Theory (MOT)
+	◦	Hydrogen Bonding
+	•	6. Redox Reactions
+	◦	Classical ideas of Oxidation and Reduction
+	◦	Oxidation Number method
+	◦	Balancing Redox Reactions (Ion-electron method, Oxidation number method)
+	◦	Types of Redox Reactions
+	•	7. Modern Periodic Table
+	◦	Modern Periodic Law
+	◦	Structure of the Modern Periodic Table (Groups, Periods)
+	◦	Periodic Trends in Physical Properties (Atomic Radius, Ionic Radius, Ionization Enthalpy, Electron Gain Enthalpy, Electronegativity)
+	◦	Periodic Trends in Chemical Properties
+	•	8. Elements of Group 1 and 2
+	◦	Hydrogen (Position, Isotopes, Compounds)
+	◦	Alkali Metals (Group 1) - Properties and Trends
+	◦	Alkaline Earth Metals (Group 2) - Properties and Trends
+	◦	Anomalous Behavior of Lithium and Beryllium
+	◦	Biological Importance of Na, K, Mg, Ca
+	•	9. Elements of Group 13, 14 and 15
+	◦	Introduction to p-Block Elements
+	◦	Group 13 (Boron Family) trends
+	◦	Group 14 (Carbon Family) trends and Allotropy of Carbon
+	◦	Group 15 (Nitrogen Family) trends
+	◦	Catenation
+	•	10. States of Matter
+	◦	Intermolecular Forces
+	◦	Gaseous State: Gas Laws (Boyle's, Charles', Gay-Lussac's, Avogadro's)
+	◦	Ideal Gas Equation and Dalton's Law of Partial Pressure
+	◦	Kinetic Molecular Theory of Gases
+	◦	Liquid State Properties (Vapor Pressure, Surface Tension, Viscosity)
+	•	11. Adsorption and Colloids
+	◦	Adsorption (Physisorption vs Chemisorption)
+	◦	Factors affecting Adsorption
+	◦	Catalysis (Homogeneous/Heterogeneous)
+	◦	Colloids (Classification, Preparation, Purification, Properties)
+	◦	Emulsions
+	•	12. Chemical Equilibrium
+	◦	Reversible and Irreversible Reactions
+	◦	Law of Mass Action and Equilibrium Constant ($K_c, K_p$)
+	◦	Homogeneous and Heterogeneous Equilibrium
+	◦	Le Chatelier's Principle
+	◦	Applications of Equilibrium Constant
+	•	13. Nuclear Chemistry and Radioactivity
+	◦	Types of Radiation (Alpha, Beta, Gamma)
+	◦	Radioactive Decay Law, Rate of Decay, Half-Life
+	◦	Nuclear Fission and Fusion
+	◦	Applications of Radioisotopes
+	•	14. Basic Principles of Organic Chemistry
+	◦	Structural Representation of Organic Compounds
+	◦	Classification of Organic Compounds
+	◦	Nomenclature (IUPAC System)
+	◦	Isomerism (Structural, Stereoisomerism)
+	◦	Theoretical Basis (Fission of bonds, Nucleophiles/Electrophiles)
+	◦	Electronic Effects (Inductive, Resonance, Electromeric, Hyperconjugation)
+	•	15. Hydrocarbons
+	◦	Alkanes (Preparation, Physical/Chemical Properties, Conformations)
+	◦	Alkenes (Preparation, Properties, Markovnikov’s Rule)
+	◦	Alkynes (Preparation, Properties, Acidic nature)
+	◦	Aromatic Hydrocarbons (Benzene: Structure, Aromaticity, Huckel Rule)
+	•	16. Chemistry in Everyday Life
+	◦	Food Chemistry (Quality, Browning, Preservation)
+	◦	Compounds in Daily Life (Soaps, Detergents)
+	◦	Medicinal Chemistry (Analgesics, Antibiotics, Antiseptics)
+
+
+3. MATHEMATICS & STATISTICS (Class 11)
+
+
+Part 1
+
+	•	1. Angle and its Measurement
+	◦	Directed Angles
+	◦	Systems of Measurement (Sexagesimal/Degree, Circular/Radian)
+	◦	Relation between Degree and Radian
+	◦	Arc Length and Area of Sector
+	•	2. Trigonometry - I
+	◦	Trigonometric Functions of any angle
+	◦	Ranges and Signs of Trig Functions
+	◦	Fundamental Identities
+	◦	Trigonometric Functions of standard angles
+	•	3. Trigonometry - II
+	◦	Compound Angles
+	◦	Allied Angles
+	◦	Multiple and Sub-multiple angles
+	◦	Factorization and Defactorization Formulae
+	•	4. Determinants and Matrices
+	◦	Determinants (Expansion, Minors, Cofactors, Properties, Cramer’s Rule)
+	◦	Matrices (Types, Algebra of Matrices, Transpose)
+	•	5. Straight Line
+	◦	Locus
+	◦	Inclination and Slope
+	◦	Equations of Lines (Point-slope, Two-point, Slope-intercept, Double-intercept, Normal form)
+	◦	General Equation of a Line
+	◦	Distance of a point from a line
+	•	6. Circle
+	◦	Standard Equation
+	◦	Centre-Radius form, Diameter form
+	◦	General Equation
+	◦	Parametric Equations
+	◦	Tangents
+	•	7. Conic Sections
+	◦	Parabola (Standard equation, focal properties)
+	◦	Ellipse (Standard equation, focal properties)
+	◦	Hyperbola (Standard equation, focal properties)
+	•	8. Measures of Dispersion
+	◦	Range
+	◦	Variance and Standard Deviation (Grouped/Ungrouped data)
+	◦	Coefficient of Variation
+	•	9. Probability
+	◦	Sample Space and Events
+	◦	Algebra of Events
+	◦	Probability of events
+	◦	Addition Theorem
+	◦	Conditional Probability
+
+Part 2
+
+	•	1. Complex Numbers
+	◦	Imaginary unit $i$
+	◦	Algebra of Complex Numbers
+	◦	Argand Diagram
+	◦	Modulus and Argument
+	◦	Polar and Exponential Form
+	◦	De Moivre’s Theorem (Statement only)
+	•	2. Sequences and Series
+	◦	Arithmetic Progression (AP) review
+	◦	Geometric Progression (GP)
+	◦	Harmonic Progression (HP)
+	◦	Arithmetico-Geometric Progression (AGP)
+	◦	Sum to Infinity of GP
+	•	3. Permutations and Combination
+	◦	Fundamental Principles of Counting
+	◦	Factorial Notation
+	◦	Permutations ($^nP_r$) - Distinct and Identical objects
+	◦	Combinations ($^nC_r$)
+	•	4. Method of Induction and Binomial Theorem
+	◦	Principle of Mathematical Induction
+	◦	Binomial Theorem for positive integral index
+	◦	General Term and Middle Term
+	•	5. Sets and Relations
+	◦	Representation of Sets
+	◦	Types of Sets and Venn Diagrams
+	◦	Algebra of Sets
+	◦	Ordered Pairs and Cartesian Product
+	◦	Relations (Domain, Range, Co-domain)
+	•	6. Functions
+	◦	Definition and Types (One-one, Onto, etc.)
+	◦	Composite Functions
+	◦	Inverse Functions
+	◦	Standard Functions (Modulus, Signum, Greatest Integer, etc.)
+	•	7. Limits
+	◦	Definition and Algebra of Limits
+	◦	Limits of Rational/Irrational functions
+	◦	Limits of Trigonometric, Exponential, and Logarithmic functions
+	•	8. Continuity
+	◦	Continuity at a point
+	◦	Continuity over an interval
+	◦	Types of Discontinuity
+	•	9. Differentiation
+	◦	Derivative by First Principle
+	◦	Derivatives of standard functions
+	◦	Rules of Differentiation (Sum, Difference, Product, Quotient)
+
+
+4. BIOLOGY (Class 11)
+
+	•	1. Living World
+	◦	Basic Principles of Life
+	◦	Taxonomical Aids (Herbarium, Botanical Gardens, Museums, Zoological Parks)
+	◦	Biodiversity Parks
+	•	2. Systematics of Living Organisms
+	◦	Classification Systems (Artificial, Natural, Phylogenetic)
+	◦	Three Domains of Life
+	◦	Five Kingdom Classification (Monera, Protista, Fungi, Plantae, Animalia)
+	◦	Viruses, Viroids, and Lichens
+	•	3. Kingdom Plantae
+	◦	Classification of Kingdom Plantae
+	◦	Algae (Thallophyta)
+	◦	Bryophyta
+	◦	Pteridophyta
+	◦	Gymnosperms
+	◦	Angiosperms
+	◦	Plant Life Cycles
+	•	4. Kingdom Animalia
+	◦	Criteria for Animal Classification (Symmetry, Germ layers, Coelom)
+	◦	Phyla: Porifera to Hemichordata
+	◦	Phylum Chordata (Urochordata, Cephalochordata, Vertebrata)
+	◦	Classes of Vertebrata (Cyclostomata to Mammalia)
+	•	5. Cell Structure and Organization
+	◦	Cell Theory
+	◦	Prokaryotic vs. Eukaryotic Cells
+	◦	Structure and Function of Cell Organelles (Nucleus, Mitochondria, Plastids, Ribosomes, Cytoskeleton, etc.)
+	•	6. Biomolecules
+	◦	Carbohydrates (Mono, Di, Polysaccharides)
+	◦	Lipids
+	◦	Proteins (Amino acids, Peptide bond)
+	◦	Nucleic Acids (DNA, RNA types)
+	◦	Enzymes (Properties, Mechanism, Factors affecting activity)
+	•	7. Cell Division
+	◦	Cell Cycle
+	◦	Mitosis (Karyokinesis, Cytokinesis)
+	◦	Meiosis (Meiosis I and II)
+	•	8. Plant Tissues and Anatomy
+	◦	Meristematic Tissues
+	◦	Permanent Tissues (Simple, Complex)
+	◦	Tissue Systems (Epidermal, Ground, Vascular)
+	◦	Secondary Growth
+	•	9. Morphology of Flowering Plants
+	◦	Root, Stem, Leaf (Modifications)
+	◦	Inflorescence
+	◦	Flower Structure and Parts
+	◦	Fruit and Seed
+	◦	Study of Families (Fabaceae, Solanaceae, Liliaceae)
+	•	10. Animal Tissue
+	◦	Epithelial Tissue
+	◦	Connective Tissue
+	◦	Muscular Tissue
+	◦	Nervous Tissue
+	•	11. Study of Animal Type - Cockroach
+	◦	Habit and Habitat
+	◦	External Morphology
+	◦	Digestive, Circulatory, Respiratory, Excretory, Nervous, Reproductive Systems
+	◦	Interaction with Mankind
+	•	12. Photosynthesis
+	◦	Chloroplasts and Pigments
+	◦	Nature of Light
+	◦	Light Reaction (Photophosphorylation)
+	◦	Dark Reaction (Calvin Cycle)
+	◦	Photorespiration and C4 Pathway
+	◦	CAM Plants
+	•	13. Respiration and Energy Transfer
+	◦	ATP as currency
+	◦	Aerobic Respiration (Glycolysis, Krebs Cycle, ETS)
+	◦	Anaerobic Respiration/Fermentation
+	◦	Respiratory Quotient
+	•	14. Human Nutrition
+	◦	Human Digestive System
+	◦	Physiology of Digestion
+	◦	Absorption and Assimilation
+	◦	Nutritional Disorders
+	•	15. Excretion and Osmoregulation
+	◦	Modes of Excretion
+	◦	Human Excretory System
+	◦	Urine Formation
+	◦	Role of Skin and Lungs
+	◦	Dialysis and Kidney Transplantation
+	•	16. Skeleton and Movement
+	◦	Types of Movement
+	◦	Structure of Muscle and Contraction mechanism
+	◦	Human Skeletal System (Axial, Appendicular)
+	◦	Types of Joints
+	◦	Disorders (Arthritis, Osteoporosis)
+

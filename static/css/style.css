@@ -2238,3 +2238,109 @@ main {
         margin-top: 0.75rem;
     }
 }
+
+/* Code and Math Rendering Styles */
+
+/* Inline code styling */
+code {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.9em;
+    color: var(--accent-primary);
+}
+
+/* Code blocks */
+pre {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--text-primary);
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+/* Math rendering styles */
+.math-inline {
+    display: inline;
+    padding: 0 0.2em;
+}
+
+.math-block {
+    display: block;
+    text-align: center;
+    margin: 1rem 0;
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+.math-error {
+    color: var(--error);
+    background: rgba(239, 68, 68, 0.1);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+/* KaTeX specific adjustments for dark mode */
+.katex {
+    color: var(--text-primary);
+}
+
+.katex .mord {
+    color: var(--text-primary);
+}
+
+/* Ensure math in explanations has good spacing */
+.card-description .math-block,
+.explanation-text .math-block {
+    margin: 1.5rem 0;
+}
+
+/* Code in options needs to be smaller */
+.option-text code {
+    font-size: 0.85em;
+}
+
+/* Adjust code blocks in card content */
+.card-question pre,
+.card-description pre,
+.hint-content pre {
+    margin: 0.5rem 0;
+    font-size: 0.9em;
+}
+
+/* Ensure formulas don't overflow in cards */
+.flashcard .math-block {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Better scrollbar for code blocks */
+pre::-webkit-scrollbar {
+    height: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}

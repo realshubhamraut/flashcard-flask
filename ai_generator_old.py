@@ -1,7 +1,7 @@
 import os
 import json
 from typing import Dict, List, Optional
-import google.generativeai as genai
+from google import genai
 
 # Syllabus module definitions
 SYLLABUS_MODULES = {
@@ -35,11 +35,10 @@ SYLLABUS_MODULES = {
     },
     "Data Visualization": {
         "hours": 50,
-        "topics": ["Business Intelligence - requirements, content and managements", "information Visualization", "Data analytics Life Cycle", "Analytic Processes and Tools", "Analysis vs. Reporting", "MS Excel: Functions, Formula, charts, Pivots and Lookups", "Data Analysis Tool pack", "Descriptive Summaries", "Correlation", "Regression", "Introduction to Tableau", "Data sources in Tableau", "Taxonomy of data visualization", "Numeric, String, Date Calculations", "LOD (Level of Detail) Expressions", "Modern Data Analytic Tools", "Visualization Techniques"]
-    },
-    "Machine Learning & Deep Learning & GenAI": {
-        "hours": 140,
-        "topics": ["Introduction to machine learning", "Formal learning model - PAC learning", "Bias complexity trade off", "The VC Dimension", "Non-uniform learnability", "Structural risk minimization", "Occam's Razor", "No Free Lunch Theorem", "Regularization and Stability", "Model Selection and Validation", "Machine Learning taxonomy", "Supervised Learning", "Unsupervised Learning", "Semi-supervised Learning", "practical use cases of ML", "Clustering (K-Means and variants)", "Hierarchical Clustering", "Dimension Reduction (PCA, Kernel PCA, LDA, Random Projections)", "Fundamentals of information theory", "Classification and Regression", "KNN", "Decision Trees", "Bayesian analysis", "Naïve Bayes classifier", "Random forest", "Gradient boosting Machines", "SVM", "XGBoost", "CatBoost", "Linear and Non-linear regression", "Time series Forecasting", "Introduction to neural networks", "Neurons", "construction of networks", "backpropagation", "Deep Feedforward Networks", "Regularization for Deep Learning", "Optimization for Training Deep Models", "Convolutional Neural Networks", "Sequence modelling using RNNs", "Transfer Learning", "Autoencoders", "Object Detection", "Object Segmentation and Tracking", "Concepts of NLP", "Introduction to transformers", "Difference between encoder, decoder and encoder-decoder architectures", "Attention Mechanisms", "Overview of BERT", "Application of transformers", "Introduction to LARGE LANGUAGE MODELS", "Understanding and handling TEXT DATA", "fine-tuning pre-trained model", "Reward Models and Alignment Strategies", "Practical case studies using SLMs and LLMs", "Deployment of LLMs"]
+        "topics": ["Business Intelligence - requirements, content and managements", "information Visualization", "Data analytics Life Cycle", "Analytic Processes and Tools", "Analysis vs. Reporting", "MS Excel: Functions, Formula, charts, Pivots and Lookups", "Data Analysis Tool pack", "Descriptive Summaries", "Correlation", "Regression", "Introduction to Tableau", "Data sources in Tableau", "Taxonomy of data visualization", "Numeric, String, Date Calculations", "LOD (Level of Detail) Expressio    },
+    "Data Visualization": {
+        "hours": 50,
+        "topics": ["Business Intelligence - requirements, content and managements", "information Visualization", "Data analytics Life Cycle", "Analytic Processes and Tools", "Analysis vs. Reporting", "MS Excel: Functions, Formula, charts, Pivots rnability", "Structural risk minimization", "Occam's Razor", "No Free Lunch Theorem", "Regularization and Stability", "Model Selection and Validation", "Machine Learning taxonomy", "Supervised Learning", "Unsupervised Learning", "Semi-supervised Learning", "practical use cases of ML", "Clustering (K-Means and variants)", "Hierarchical Clustering", "Dimension Reduction (PCA, Kernel PCA, LDA, Random Projections)", "Fundamentals of information theory", "Classification and Regression", "KNN", "Decision Trees", "Bayesian analysis", "Naïve Bayes classifier", "Random forest", "Gradient boosting Machines", "SVM", "XGBoost", "CatBoost", "Linear and Non-linear regression", "Time series Forecasting", "Introduction to neural networks", "Neurons", "construction of networks", "backpropagation", "Deep Feedforward Networks", "Regularization for Deep Learning", "Optimization for Training Deep Models", "Convolutional Neural Networks", "Sequence modelling using RNNs", "Transfer Learning", "Autoencoders", "Object Detection", "Object Segmentation and Tracking", "Concepts of NLP", "Introduction to transformers", "Difference between encoder, decoder and encoder-decoder architectures", "Attention Mechanisms", "Overview of BERT", "Application of transformers", "Introduction to LARGE LANGUAGE MODELS", "Understanding and handling TEXT DATA", "fine-tuning pre-trained model", "Reward Models and Alignment Strategies", "Practical case studies using SLMs and LLMs", "Deployment of LLMs"]
     }
 }
 
@@ -50,31 +49,17 @@ class GeminiFlashcardGenerator:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY environment variable must be set")
         
-        # Configure the API
-        genai.configure(api_key=self.api_key)
+        # Initialize the client with the new API
+        self.client = genai.Client(api_key=self.api_key)
     
-    def generate_flashcards(self, module: str, topics = None, count: int = 5, difficulty: str = "medium") -> dict:
-        """Generate flashcards for a specific module and topic(s)
-        
-        Args:
-            module: Module name
-            topics: Single topic string, list of topics, or None for all topics
-            count: Number of cards to generate
-            difficulty: Difficulty level (easy, medium, hard)
-        """
+    def generate_flashcards(self, module: str, topic: str = None, count: int = 5, difficulty: str = "medium") -> dict:
+        """Generate flashcards for a specific module and topic"""
         
         if module not in SYLLABUS_MODULES:
             raise ValueError(f"Module '{module}' not found in syllabus")
         
         module_info = SYLLABUS_MODULES[module]
-        
-        # Handle topics parameter (can be string, list, or None)
-        if topics is None or (isinstance(topics, list) and len(topics) == 0):
-            topic_context = ""
-        elif isinstance(topics, list):
-            topic_context = f" focusing on: {', '.join(topics)}"
-        else:
-            topic_context = f" focusing on {topics}"
+        topic_context = f" focusing on {topic}" if topic else ""
         
         prompt = f"""Generate {count} multiple-choice flashcards for {module}{topic_context}.
 
@@ -83,7 +68,7 @@ Module context: {', '.join(module_info['topics'][:10])}...
 
 Generate flashcards in this EXACT JSON format (return ONLY pure JSON, no markdown formatting):
 {{
-  "name": "{module}{topic_context}",
+  "name": "{module}{' - ' + topic if topic else ''}",
   "description": "Fundamental concepts for this topic",
   "cards": [
     {{
@@ -116,8 +101,10 @@ CRITICAL REQUIREMENTS:
 Return the JSON object directly - no formatting, no code blocks."""
 
         try:
-            model = genai.GenerativeModel('gemini-2.5-flash')
-            response = model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt
+            )
             
             # Extract JSON from response
             response_text = response.text.strip()
@@ -150,14 +137,12 @@ Return the JSON object directly - no formatting, no code blocks."""
             if not valid_cards:
                 return {'success': False, 'error': 'No valid cards in response'}
             
-            topic_str = ', '.join(topics) if isinstance(topics, list) else (topics or "")
-            
             return {
                 'success': True,
                 'cards': valid_cards,
                 'module': module,
-                'topic': topic_str,
-                'deck_name': result.get('name', f"{module}{topic_context}"),
+                'topic': topic,
+                'deck_name': result.get('name', f"{module}{' - ' + topic if topic else ''}"),
                 'deck_description': result.get('description', '')
             }
             

@@ -7,9 +7,13 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import func
 
 from config import Config
-from models import db, User, Deck, Card, CardProgress, Review, StudySession, SpacedRepetitionSettings
-from spaced_repetition import SpacedRepetition
+from models import db, User, Deck, Card, CardProgress, Review, StudySession
+
 from ai_generator import GeminiFlashcardGenerator, SYLLABUS_MODULES
+from ai_generator_payal import PayalFlashcardGenerator, PAYAL_SUBJECTS
+from ai_generator_payal import PayalFlashcardGenerator
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -136,13 +140,10 @@ def index():
     def build_node(deck):
         # Aggregate stats across subdecks
         stats = deck.get_stats(include_subdecks=True)
-        # Count not-studied cards across the deck and its descendants
-        descendant_ids = deck._collect_descendant_ids()
-        not_studied_count = Card.query.filter(Card.deck_id.in_(descendant_ids)).outerjoin(
-            CardProgress, Card.id == CardProgress.card_id
-        ).filter(CardProgress.id == None).count()
+        # Due count is the not_studied count from stats (includes all subdecks)
+        due_count = stats.get('not_studied', 0)
 
-        node = {'deck': deck, 'stats': stats, 'due': not_studied_count, 'children': []}
+        node = {'deck': deck, 'stats': stats, 'due': due_count, 'children': []}
         for child in sorted(children_map.get(deck.id, []), key=lambda x: (x.display_order, x.name.lower())):
             node['children'].append(build_node(child))
         return node
@@ -718,7 +719,7 @@ def stats():
     ).all()
     
     if today_reviews > 0:
-        today_correct = sum(1 for r in today_review_data if r.rating in ['good', 'easy'])
+        today_correct = sum(1 for r in today_review_data if r.rating == 'correct')
         today_accuracy = round((today_correct / today_reviews * 100), 1)
     else:
         today_accuracy = 0
@@ -787,7 +788,7 @@ def api_review_history():
         func.count(Review.id).label('total'),
         func.sum(
             db.case(
-                (Review.result == 'correct', 1),
+                (Review.rating == 'correct', 1),
                 else_=0
             )
         ).label('correct')
@@ -812,119 +813,10 @@ def api_review_history():
     })
 
 
-@app.route('/settings', methods=['GET', 'POST'])
-@login_required
-def settings():
-    """Spaced repetition settings page"""
-    user_settings = SpacedRepetitionSettings.get_or_create(current_user.id)
-    
-    if request.method == 'POST':
-        try:
-            # Update settings from form
-            user_settings.interval_multiplier = float(request.form.get('interval_multiplier', 1.0))
-            user_settings.again_minutes = int(request.form.get('again_minutes', 10))
-            user_settings.hard_multiplier = float(request.form.get('hard_multiplier', 1.2))
-            user_settings.good_days = int(request.form.get('good_days', 1))
-            user_settings.easy_multiplier = float(request.form.get('easy_multiplier', 4.0))
-            user_settings.starting_ease = float(request.form.get('starting_ease', 2.5))
-            user_settings.easy_bonus = float(request.form.get('easy_bonus', 1.3))
-            user_settings.hard_penalty = float(request.form.get('hard_penalty', 0.8))
-            user_settings.graduating_interval = int(request.form.get('graduating_interval', 1))
-            user_settings.easy_interval = int(request.form.get('easy_interval', 4))
-            
-            db.session.commit()
-            flash('Settings saved successfully!', 'success')
-            return redirect(url_for('settings'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error saving settings: {str(e)}', 'error')
-    
-    return render_template('settings.html', settings=user_settings)
 
 
-@app.route('/api/retention-data')
-@login_required
-def retention_data():
-    """Get retention data with historical reviews and predictions"""
-    # Get all cards for the current user
-    cards = Card.query.join(Deck).filter(Deck.user_id == current_user.id).all()
-    
-    if not cards:
-        return jsonify({'historical': [], 'predictions': []})
-    
-    # Get review history for the past 90 days
-    ninety_days_ago = datetime.utcnow() - timedelta(days=90)
-    
-    # Calculate retention for each day
-    retention_data = []
-    today = datetime.utcnow().date()
-    
-    for day_offset in range(90):
-        target_date = today - timedelta(days=90 - day_offset)
-        next_date = target_date + timedelta(days=1)
-        
-        # Count cards that were supposed to be reviewed on this day
-        cards_due = CardProgress.query.join(Card).join(Deck).filter(
-            Deck.user_id == current_user.id,
-            func.date(CardProgress.due_date) == target_date
-        ).count()
-        
-        if cards_due > 0:
-            # Count how many were actually reviewed
-            cards_reviewed = Review.query.join(Card).join(Deck).filter(
-                Deck.user_id == current_user.id,
-                func.date(Review.reviewed_at) == target_date
-            ).count()
-            
-            retention_rate = (cards_reviewed / cards_due) * 100
-        else:
-            retention_rate = None
-        
-        retention_data.append({
-            'date': str(target_date),
-            'retention': retention_rate,
-            'cards_due': cards_due,
-            'cards_reviewed': cards_reviewed if cards_due > 0 else 0
-        })
-    
-    # Calculate predictions for next 30 days
-    predictions = []
-    
-    # Calculate average retention rate from historical data
-    valid_retention_rates = [d['retention'] for d in retention_data if d['retention'] is not None]
-    if valid_retention_rates:
-        avg_retention = sum(valid_retention_rates) / len(valid_retention_rates)
-    else:
-        avg_retention = 85  # Default assumption
-    
-    # Use exponential decay model for predictions
-    # retention(t) = base_retention * e^(-decay_rate * t)
-    decay_rate = 0.01  # Configurable decay rate
-    
-    for day_offset in range(1, 31):
-        future_date = today + timedelta(days=day_offset)
-        
-        # Count cards that will be due on this date
-        cards_due_future = CardProgress.query.join(Card).join(Deck).filter(
-            Deck.user_id == current_user.id,
-            func.date(CardProgress.due_date) == future_date
-        ).count()
-        
-        # Predict retention using exponential decay
-        import math
-        predicted_retention = avg_retention * math.exp(-decay_rate * day_offset)
-        
-        predictions.append({
-            'date': str(future_date),
-            'predicted_retention': round(predicted_retention, 1),
-            'cards_due': cards_due_future
-        })
-    
-    return jsonify({
-        'historical': retention_data,
-        'predictions': predictions,
-        'avg_retention': round(avg_retention, 1) if valid_retention_rates else None
-    })
+
+
 
 
 @app.route('/deck/<int:deck_id>/delete', methods=['GET', 'POST'])
@@ -1116,6 +1008,133 @@ def get_ai_modules():
     })
 
 
+@app.route('/api/ai/modules-payal', methods=['GET'])
+@login_required
+def get_ai_modules_payal():
+    """Get available subjects for Payal's generator - 8 decks (Class 11 & 12 for each subject)"""
+    # Return 8 specific deck options
+    modules = [
+        "Class 11 - Physics",
+        "Class 11 - Chemistry", 
+        "Class 11 - Mathematics",
+        "Class 11 - Biology",
+        "Class 12 - Physics",
+        "Class 12 - Chemistry",
+        "Class 12 - Mathematics",
+        "Class 12 - Biology"
+    ]
+    
+    return jsonify({
+        'success': True,
+        'modules': modules
+    })
+
+
+@app.route('/api/ai/initialize-payal-decks', methods=['POST'])
+@login_required
+def initialize_payal_decks():
+    """Create the 8 standard decks for Payal (Class 11 & 12 for Physics, Chemistry, Math, Biology)"""
+    try:
+        decks_created = []
+        decks_existing = []
+        
+        deck_names = [
+            "Class 11 - Physics",
+            "Class 11 - Chemistry", 
+            "Class 11 - Mathematics",
+            "Class 11 - Biology",
+            "Class 12 - Physics",
+            "Class 12 - Chemistry",
+            "Class 12 - Mathematics",
+            "Class 12 - Biology"
+        ]
+        
+        for deck_name in deck_names:
+            # Check if deck already exists for this user
+            existing = Deck.query.filter_by(
+                user_id=current_user.id,
+                name=deck_name
+            ).first()
+            
+            if existing:
+                decks_existing.append(deck_name)
+            else:
+                # Create new deck
+                new_deck = Deck(
+                    user_id=current_user.id,
+                    name=deck_name,
+                    description=f"Maharashtra Board {deck_name} - MHT-CET/JEE/NEET preparation"
+                )
+                db.session.add(new_deck)
+                decks_created.append(deck_name)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'created': decks_created,
+            'existing': decks_existing,
+            'message': f'Created {len(decks_created)} new decks. {len(decks_existing)} already existed.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/ai/modules-payal/<module_name>/topics', methods=['GET'])
+@login_required
+def get_ai_topics_payal(module_name):
+    """Get topics for a specific class-subject combination in Payal's generator"""
+    # Parse module_name like "Class 11 - Physics"
+    try:
+        parts = module_name.split(' - ')
+        if len(parts) != 2:
+            return jsonify({'success': False, 'error': 'Invalid module format'}), 400
+        
+        class_part = parts[0].strip()  # "Class 11" or "Class 12"
+        subject = parts[1].strip()      # "Physics", "Chemistry", etc.
+        
+        # Determine which class
+        if class_part == "Class 11":
+            class_key = "class_11"
+        elif class_part == "Class 12":
+            class_key = "class_12"
+        else:
+            return jsonify({'success': False, 'error': 'Invalid class'}), 400
+        
+        # Get topics for this subject and class
+        if subject not in PAYAL_SUBJECTS:
+            return jsonify({'success': False, 'error': 'Invalid subject'}), 400
+        
+        topics = PAYAL_SUBJECTS[subject].get(class_key, [])
+        
+        return jsonify({
+            'success': True,
+            'topics': topics
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@app.route('/api/ai/modules/<module_name>/topics', methods=['GET'])
+@login_required
+def get_ai_topics(module_name):
+    """Get topics for a specific module in Shubham's generator"""
+    if module_name not in SYLLABUS_MODULES:
+        return jsonify({'success': False, 'error': 'Invalid module'}), 400
+    
+    topics = SYLLABUS_MODULES[module_name].get('topics', [])
+    
+    return jsonify({
+        'success': True,
+        'topics': topics
+    })
+
+
 @app.route('/api/ai/generate-cards', methods=['POST'])
 @login_required
 def generate_ai_cards():
@@ -1125,14 +1144,14 @@ def generate_ai_cards():
         
         # Validate required fields
         deck_id = data.get('deck_id')
-        module_name = data.get('module_name')
-        topic = data.get('topic')  # Optional
+        module_name = data.get('module')  # Changed from module_name
+        topics = data.get('topics')  # Changed from topic - now supports multiple
         count = data.get('count', 50)
         difficulty = data.get('difficulty', 'medium')
         
         if not deck_id or not module_name:
             return jsonify({
-                'error': 'deck_id and module_name are required'
+                'error': 'deck_id and module are required'
             }), 400
         
         # Verify user owns the deck
@@ -1145,56 +1164,101 @@ def generate_ai_cards():
         # Initialize Gemini generator
         generator = GeminiFlashcardGenerator()
         
-        # Generate flashcards
-        flashcards = generator.generate_flashcards(
-            module_name=module_name,
-            topic=topic,
-            count=count,
-            difficulty=difficulty
-        )
+        # Log request details for debugging
+        app.logger.info(f"Generating cards: module={module_name}, topics={topics}, count={count}, difficulty={difficulty}")
+        
+        # Handle mixed difficulty
+        if difficulty == 'mixed':
+            # Generate cards with different difficulties (20% easy, 50% medium, 30% hard)
+            total = count
+            easy_count = max(1, int(total * 0.2))
+            medium_count = max(1, int(total * 0.5))
+            hard_count = total - easy_count - medium_count
+            
+            all_flashcards = []
+            
+            # Generate easy cards
+            if easy_count > 0:
+                app.logger.info(f"Generating {easy_count} easy cards")
+                result = generator.generate_flashcards(module_name, topics, easy_count, 'easy')
+                if result.get('success'):
+                    for card in result['cards']:
+                        card['difficulty'] = 'easy'
+                    all_flashcards.extend(result['cards'])
+                else:
+                    app.logger.error(f"Easy cards generation failed: {result.get('error')}")
+            
+            # Generate medium cards
+            if medium_count > 0:
+                app.logger.info(f"Generating {medium_count} medium cards")
+                result = generator.generate_flashcards(module_name, topics, medium_count, 'medium')
+                if result.get('success'):
+                    for card in result['cards']:
+                        card['difficulty'] = 'medium'
+                    all_flashcards.extend(result['cards'])
+                else:
+                    app.logger.error(f"Medium cards generation failed: {result.get('error')}")
+            
+            # Generate hard cards
+            if hard_count > 0:
+                app.logger.info(f"Generating {hard_count} hard cards")
+                result = generator.generate_flashcards(module_name, topics, hard_count, 'hard')
+                if result.get('success'):
+                    for card in result['cards']:
+                        card['difficulty'] = 'hard'
+                    all_flashcards.extend(result['cards'])
+                else:
+                    app.logger.error(f"Hard cards generation failed: {result.get('error')}")
+            
+            flashcards = all_flashcards
+        else:
+            # Generate flashcards with single difficulty
+            result = generator.generate_flashcards(module_name, topics, count, difficulty)
+            
+            if not result.get('success'):
+                app.logger.error(f"Generation failed: {result.get('error')}")
+                return jsonify({
+                    'error': result.get('error', 'Failed to generate flashcards')
+                }), 500
+            
+            flashcards = result.get('cards', [])
         
         # Insert generated cards into the deck
         cards_added = 0
         for flashcard_data in flashcards:
-            # Convert correct_answer letter (a-d) to index (0-3)
-            correct_letter = flashcard_data.get('correct_answer', 'a').lower()
-            correct_index = ord(correct_letter) - ord('a')
+            # Validate card format - new format uses arrays directly
+            if not isinstance(flashcard_data.get('options'), list) or len(flashcard_data.get('options', [])) != 4:
+                continue
             
-            # Convert options dict to array
-            options_dict = flashcard_data.get('options', {})
-            options_array = [
-                options_dict.get('a', ''),
-                options_dict.get('b', ''),
-                options_dict.get('c', ''),
-                options_dict.get('d', '')
-            ] if options_dict else None
-            
-            # Join code_blocks array into single string
-            code_blocks = flashcard_data.get('code_blocks', [])
-            code_string = '\n\n'.join(code_blocks) if code_blocks else None
+            if not isinstance(flashcard_data.get('correct_answer'), int) or flashcard_data.get('correct_answer') not in [0, 1, 2, 3]:
+                continue
             
             card = Card(
                 deck_id=deck_id,
-                question=flashcard_data.get('question_text', ''),
-                hint=flashcard_data.get('hint'),
-                options=options_array,
-                correct_answer=correct_index,
-                description=flashcard_data.get('explanation', ''),
-                reference=flashcard_data.get('reference'),
-                code=code_string,
-                difficulty=flashcard_data.get('difficulty', 'medium')
+                question=flashcard_data.get('question', ''),
+                hint=flashcard_data.get('hint', ''),
+                options=flashcard_data.get('options'),
+                correct_answer=flashcard_data.get('correct_answer'),
+                description=flashcard_data.get('description', ''),
+                reference=flashcard_data.get('reference', ''),
+                code=flashcard_data.get('code', ''),
+                difficulty=flashcard_data.get('difficulty', difficulty if difficulty != 'mixed' else 'medium')
             )
             db.session.add(card)
             cards_added += 1
         
         db.session.commit()
         
+        # Format topics for response
+        topics_str = ', '.join(topics) if isinstance(topics, list) and topics else 'All Topics'
+        
         return jsonify({
             'success': True,
             'cards_generated': cards_added,
             'deck_id': deck_id,
+            'deck_name': deck.name,
             'module': module_name,
-            'topic': topic
+            'topics': topics_str
         })
         
     except ValueError as e:
@@ -1255,6 +1319,339 @@ def future_time_filter(dt):
         return f'in {diff.seconds // 60} minute{"s" if diff.seconds // 60 > 1 else ""}'
     else:
         return 'in a moment'
+
+
+@app.route('/api/ai/generate-cards-payal', methods=['POST'])
+@login_required
+def generate_ai_cards_payal():
+    """Generate flashcards for Payal using Maharashtra Board context"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        deck_id = data.get('deck_id')
+        module = data.get('module')  # e.g., "Class 11 - Physics"
+        topics = data.get('topics', [])  # Array of topics
+        count = data.get('count', 10)
+        difficulty = data.get('difficulty', 'medium')
+        exam_focus = data.get('exam_focus', 'MHT-CET')  # MHT-CET, JEE, NEET
+        
+        if not deck_id or not module or not topics:
+            return jsonify({
+                'error': 'deck_id, module, and topics are required'
+            }), 400
+        
+        # Parse module name to extract subject
+        # Format: "Class 11 - Physics" -> subject = "Physics"
+        try:
+            parts = module.split(' - ')
+            if len(parts) != 2:
+                raise ValueError("Invalid module format")
+            subject = parts[1]  # e.g., "Physics"
+        except:
+            return jsonify({
+                'error': 'Invalid module format. Expected "Class X - Subject"'
+            }), 400
+        
+        # Verify user owns the deck
+        deck = Deck.query.get_or_404(deck_id)
+        if deck.user_id != current_user.id:
+            return jsonify({
+                'error': 'Unauthorized access to deck'
+            }), 403
+        
+        # Initialize Payal's generator
+        generator = PayalFlashcardGenerator()
+        
+        # Generate flashcards for all selected topics
+        all_flashcards = []
+        cards_per_topic = max(1, count // len(topics))  # Distribute cards among topics
+        
+        for topic in topics:
+            app.logger.info(f"Generating Payal's cards: subject={subject}, topic={topic}, count={cards_per_topic}, difficulty={difficulty}, exam={exam_focus}")
+            
+            # Generate flashcards for this topic
+            flashcards = generator.generate_cards(
+                topic=topic,
+                subject=subject,
+                num_cards=cards_per_topic,
+                difficulty=difficulty,
+                exam_focus=exam_focus
+            )
+            
+            if flashcards:
+                all_flashcards.extend(flashcards)
+        
+        if not all_flashcards:
+            return jsonify({
+                'error': 'Failed to generate flashcards. Please try again.'
+            }), 500
+        
+        # Insert generated cards into the deck
+        cards_added = 0
+        for flashcard_data in all_flashcards:
+            # Create card with Payal's format (no code field)
+            card = Card(
+                deck_id=deck_id,
+                question=flashcard_data['question'],
+                options=flashcard_data['options'],
+                correct_answer=flashcard_data['correct_answer'],
+                hint=flashcard_data.get('hint', ''),
+                description=flashcard_data.get('explanation', ''),
+                reference=flashcard_data.get('reference', ''),
+                difficulty=flashcard_data.get('difficulty', difficulty)
+            )
+            db.session.add(card)
+            cards_added += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'cards_added': cards_added,
+            'message': f'Successfully generated {cards_added} cards for {exam_focus} preparation'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error generating Payal's cards: {str(e)}")
+        return jsonify({
+            'error': f'Error generating cards: {str(e)}'
+        }), 500
+
+
+@app.route('/api/ai/generate-cards-shubham', methods=['POST'])
+@login_required
+def generate_ai_cards_shubham():
+    """Generate flashcards for Shubham (original format with code field)"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        deck_id = data.get('deck_id')
+        module_name = data.get('module')
+        topics = data.get('topics')
+        count = data.get('count', 50)
+        difficulty = data.get('difficulty', 'medium')
+        
+        if not deck_id or not module_name:
+            return jsonify({
+                'error': 'deck_id and module are required'
+            }), 400
+        
+        # Verify user owns the deck
+        deck = Deck.query.get_or_404(deck_id)
+        if deck.user_id != current_user.id:
+            return jsonify({
+                'error': 'Unauthorized access to deck'
+            }), 403
+        
+        # Initialize Gemini generator (Shubham's format)
+        generator = GeminiFlashcardGenerator()
+        
+        app.logger.info(f"Generating Shubham's cards: module={module_name}, topics={topics}, count={count}, difficulty={difficulty}")
+        
+        # Generate flashcards with code field support
+        result = generator.generate_flashcards(module_name, topics, count, difficulty)
+        
+        if not result.get('success'):
+            app.logger.error(f"Generation failed: {result.get('error')}")
+            return jsonify({
+                'error': result.get('error', 'Failed to generate flashcards')
+            }), 500
+        
+        flashcards = result.get('cards', [])
+        
+        # Insert generated cards into the deck
+        cards_added = 0
+        for flashcard_data in flashcards:
+            # Create card with Shubham's format (includes code field)
+            card = Card(
+                deck_id=deck_id,
+                question=flashcard_data.get('question', ''),
+                options=flashcard_data.get('options', []),
+                correct_answer=flashcard_data.get('correct_answer', 0),
+                hint=flashcard_data.get('hint', ''),
+                description=flashcard_data.get('explanation', ''),
+                code=flashcard_data.get('code', ''),  # Code field for programming questions
+                reference=flashcard_data.get('reference', ''),
+                difficulty=flashcard_data.get('difficulty', difficulty)
+            )
+            db.session.add(card)
+            cards_added += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'cards_added': cards_added,
+            'message': f'Successfully generated {cards_added} cards'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error generating Shubham's cards: {str(e)}")
+        return jsonify({
+            'error': f'Error generating cards: {str(e)}'
+        }), 500
+
+
+@app.route('/api/ai/generate-payal/<int:deck_id>', methods=['POST'])
+@login_required
+def generate_ai_cards_payal_deck(deck_id):
+    """Generate flashcards for Payal with deck integration"""
+    try:
+        data = request.get_json()
+        
+        # Get parameters from request
+        subject = data.get('module')  # Subject name (Physics, Chemistry, etc.)
+        topic = data.get('topic')  # Optional specific topic
+        num_cards = data.get('num_cards', 10)
+        difficulty = data.get('difficulty', 'medium')
+        
+        if not subject:
+            return jsonify({
+                'success': False,
+                'error': 'Subject (module) is required'
+            }), 400
+        
+        # Verify user owns the deck
+        deck = Deck.query.get_or_404(deck_id)
+        if deck.user_id != current_user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Unauthorized access to deck'
+            }), 403
+        
+        # Initialize Payal's generator
+        generator = PayalFlashcardGenerator()
+        
+        app.logger.info(f"Generating Payal's cards: subject={subject}, topic={topic}, num_cards={num_cards}, difficulty={difficulty}")
+        
+        # Generate flashcards (NO code field)
+        cards = generator.generate_cards(
+            topic=topic if topic else f"General {subject}",
+            subject=subject,
+            num_cards=num_cards,
+            difficulty=difficulty,
+            exam_focus="MHT-CET"
+        )
+        
+        # Insert generated cards into the deck
+        cards_added = 0
+        for card_data in cards:
+            card = Card(
+                deck_id=deck_id,
+                question=card_data.get('question', ''),
+                options=card_data.get('options', []),
+                correct_answer=card_data.get('correct_answer', 0),
+                hint=card_data.get('hint', ''),
+                description=card_data.get('explanation', ''),
+                code='',  # NO CODE FIELD for Payal
+                reference=card_data.get('reference', ''),
+                difficulty=card_data.get('difficulty', difficulty)
+            )
+            db.session.add(card)
+            cards_added += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'cards_generated': cards_added,
+            'message': f'Successfully generated {cards_added} cards for Payal'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error generating Payal's cards: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Error generating cards: {str(e)}'
+        }), 500
+
+
+@app.route('/api/ai/generate-shubham/<int:deck_id>', methods=['POST'])
+@login_required
+def generate_ai_cards_shubham_deck(deck_id):
+    """Generate flashcards for Shubham with deck integration"""
+    try:
+        data = request.get_json()
+        
+        # Get parameters from request
+        module_name = data.get('module')
+        topics = data.get('topic')  # Can be None for all topics
+        num_cards = data.get('num_cards', 10)
+        difficulty = data.get('difficulty', 'medium')
+        
+        if not module_name:
+            return jsonify({
+                'success': False,
+                'error': 'Module is required'
+            }), 400
+        
+        # Verify user owns the deck
+        deck = Deck.query.get_or_404(deck_id)
+        if deck.user_id != current_user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Unauthorized access to deck'
+            }), 403
+        
+        # Initialize Shubham's generator
+        generator = GeminiFlashcardGenerator()
+        
+        app.logger.info(f"Generating Shubham's cards: module={module_name}, topics={topics}, num_cards={num_cards}, difficulty={difficulty}")
+        
+        # Generate flashcards with code field
+        result = generator.generate_flashcards(
+            module_name=module_name,
+            topics=[topics] if topics else None,
+            count=num_cards,
+            difficulty=difficulty
+        )
+        
+        if not result.get('success'):
+            app.logger.error(f"Generation failed: {result.get('error')}")
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to generate flashcards')
+            }), 500
+        
+        flashcards = result.get('cards', [])
+        
+        # Insert generated cards into the deck
+        cards_added = 0
+        for card_data in flashcards:
+            card = Card(
+                deck_id=deck_id,
+                question=card_data.get('question', ''),
+                options=card_data.get('options', []),
+                correct_answer=card_data.get('correct_answer', 0),
+                hint=card_data.get('hint', ''),
+                description=card_data.get('explanation', card_data.get('description', '')),
+                code=card_data.get('code', ''),  # Code field for programming
+                reference=card_data.get('reference', ''),
+                difficulty=card_data.get('difficulty', difficulty)
+            )
+            db.session.add(card)
+            cards_added += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'cards_generated': cards_added,
+            'message': f'Successfully generated {cards_added} cards for Shubham'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error generating Shubham's cards: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Error generating cards: {str(e)}'
+        }), 500
 
 
 if __name__ == '__main__':

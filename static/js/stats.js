@@ -22,16 +22,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data
     loadReviewData(currentDays);
-    
-    // Load retention chart
-    loadRetentionChart();
 });
 
 function loadReviewData(days) {
     fetch(`/api/stats/review-history?days=${days}`)
         .then(response => response.json())
         .then(data => {
-            createReviewChart(data.reviews, days);
             createAccuracyChart(data.accuracy, days);
         })
         .catch(error => {
@@ -440,7 +436,6 @@ const observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
         if (mutation.attributeName === 'data-theme') {
             loadReviewData(currentDays);
-            loadRetentionChart();
         }
     });
 });

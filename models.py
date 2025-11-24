@@ -79,7 +79,8 @@ class Deck(db.Model):
         # Count by last result
         q = db.session.query(Card).outerjoin(CardProgress, Card.id == CardProgress.card_id).filter(Card.deck_id.in_(deck_ids))
 
-        not_studied = q.filter(CardProgress.last_result == None).count()
+        # Not studied: either no CardProgress record OR CardProgress with last_result = None
+        not_studied = q.filter((CardProgress.id == None) | (CardProgress.last_result == None)).count()
         correct = q.filter(CardProgress.last_result == 'correct').count()
         incorrect = q.filter(CardProgress.last_result == 'incorrect').count()
         trippy = q.filter(CardProgress.last_result == 'trippy').count()

@@ -6,8 +6,55 @@
 <div class="page-header">
     <h1>Your Decks</h1>
     <div class="header-actions">
-        <button onclick="createDeck()" class="btn btn-secondary">+ New Deck</button>
+        <button onclick="openCreateDeckModal()" class="btn btn-secondary">+ New Deck</button>
         <a href="{{ url_for('import_deck') }}" class="btn btn-primary">+ Import Deck</a>
+    </div>
+</div>
+
+<!-- AI Generator Selection -->
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+    <h2 style="color: white; margin: 0 0 1rem 0; font-size: 1.5rem; text-align: center;">🤖 AI Flashcard Generator</h2>
+    <p style="color: rgba(255,255,255,0.9); text-align: center; margin-bottom: 1.5rem;">Choose your generator based on your study needs</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <!-- Payal's Generator Card -->
+        <div style="background: white; border-radius: 10px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <span style="font-size: 2.5rem;">🎓</span>
+                <h3 style="margin: 0; color: #2563eb; font-size: 1.25rem;">For Payal</h3>
+            </div>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">Maharashtra State Board preparation for competitive exams</p>
+            <ul style="color: #475569; font-size: 0.85rem; margin: 0 0 1rem 0; padding-left: 1.5rem;">
+                <li>Physics, Chemistry, Math, Biology</li>
+                <li>MHT-CET, JEE, NEET focused</li>
+                <li>Class 11 & 12 syllabus</li>
+                <li>Academic MCQs (no coding)</li>
+            </ul>
+            <button onclick="initializePayalDecks()" class="btn btn-secondary" style="width: 100%; margin-bottom: 0.75rem; background: #64748b; font-size: 0.9rem;">
+                📚 Create 8 Standard Decks
+            </button>
+            <button onclick="openAIModal('payal')" class="btn btn-primary" style="width: 100%; background: #2563eb;">
+                Generate Cards for Payal
+            </button>
+        </div>
+        
+        <!-- Shubham's Generator Card -->
+        <div style="background: white; border-radius: 10px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <span style="font-size: 2.5rem;">💻</span>
+                <h3 style="margin: 0; color: #16a34a; font-size: 1.25rem;">For Shubham</h3>
+            </div>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">Programming & technology preparation for tech interviews</p>
+            <ul style="color: #475569; font-size: 0.85rem; margin: 0 0 1.5rem 0; padding-left: 1.5rem;">
+                <li>Python, Java, Linux, DBMS</li>
+                <li>Data Science & ML/DL</li>
+                <li>Big Data & Cloud Computing</li>
+                <li>Code examples included</li>
+            </ul>
+            <button onclick="openAIModal('shubham')" class="btn btn-success" style="width: 100%; background: #16a34a;">
+                Generate Cards for Shubham
+            </button>
+        </div>
     </div>
 </div>
 
@@ -17,8 +64,7 @@
             <thead>
                 <tr>
                     <th class="deck-name-col">Deck</th>
-                    <th class="stat-col stat-new">New</th>
-                    <th class="stat-col stat-learning">Learn</th>
+                    <th class="stat-col stat-total">Total</th>
                     <th class="stat-col stat-due">Due</th>
                     <th class="actions-col"></th>
                 </tr>
@@ -96,8 +142,7 @@
                                 </button>
                             </div>
                         </td>
-                        <td class="stat-cell stat-new">{{ node.stats.new }}</td>
-                        <td class="stat-cell stat-learning">{{ node.stats.learning }}</td>
+                        <td class="stat-cell stat-total">{{ node.stats.total }}</td>
                         <td class="stat-cell stat-due">{{ node.due }}</td>
                         <td class="actions-cell">
                             <div class="deck-actions-minimal">
@@ -410,24 +455,77 @@ function createSubdeck(parentId) {
 }
 
 function createDeck() {
-    const name = prompt('Enter name for the new deck:');
-    if (!name) return;
-
-    fetch('/api/deck', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), parent_id: null })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || 'Could not create deck');
-        }
-    })
-    .catch(err => alert('Error: ' + err));
+    openCreateDeckModal();
 }
+
+function openCreateDeckModal() {
+    const modal = document.getElementById('createDeckModal');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    setTimeout(() => document.getElementById('deckName').focus(), 100);
+}
+
+function closeCreateDeckModal() {
+    const modal = document.getElementById('createDeckModal');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    document.getElementById('createDeckForm').reset();
+}
+
+// Handle create deck form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const createDeckForm = document.getElementById('createDeckForm');
+    if (createDeckForm) {
+        createDeckForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(createDeckForm);
+            const name = formData.get('name').trim();
+            const parent_id = formData.get('parent_id') || null;
+            
+            if (!name) {
+                alert('Please enter a deck name');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/deck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: name,
+                        parent_id: parent_id ? parseInt(parent_id) : null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeCreateDeckModal();
+                    location.reload();
+                } else {
+                    alert(data.error || 'Could not create deck');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to create deck');
+            }
+        });
+    }
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        const aiModal = document.getElementById('aiModal');
+        const createModal = document.getElementById('createDeckModal');
+        
+        if (event.target === aiModal) {
+            closeAIModal();
+        }
+        if (event.target === createModal) {
+            closeCreateDeckModal();
+        }
+    });
+});
 
 function makeRootDeck(deckId) {
     if (!confirm('Convert this subdeck to a root deck?')) return;
@@ -448,4 +546,311 @@ function makeRootDeck(deckId) {
     .catch(err => alert('Error: ' + err));
 }
 </script>
+
+<!-- AI Generation Modal -->
+<div id="aiModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeAIModal()">&times;</span>
+        <h2>🤖 Generate AI Flashcards</h2>
+        
+        <form id="aiForm">
+            <div class="form-group">
+                <label for="aiDeck">Select Deck:</label>
+                <select id="aiDeck" name="deck_id" required>
+                    <option value="">-- Select Deck --</option>
+                    {% macro render_deck_option(node, level=0) %}
+                        <option value="{{ node.deck.id }}">{{ '  ' * level }}{{ '└─ ' if level > 0 else '' }}{{ node.deck.name }}</option>
+                        {% if node.children %}
+                            {% for child in node.children %}
+                                {{ render_deck_option(child, level + 1) }}
+                            {% endfor %}
+                        {% endif %}
+                    {% endmacro %}
+                    {% for node in deck_stats %}
+                        {{ render_deck_option(node) }}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="aiModule">Module:</label>
+                <select id="aiModule" name="module" required onchange="onModuleChange()">
+                    <option value="">-- Select Module --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Topics (select multiple):</label>
+                <div id="aiTopicCheckboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; background: rgba(0,0,0,0.2);">
+                    <small style="color: rgba(255,255,255,0.5);">Select a module first</small>
+                </div>
+                <small style="color: rgba(255,255,255,0.6); font-size: 12px; display: block; margin-top: 5px;">
+                    💡 Check one or more topics, or leave all unchecked for all topics
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="aiCount">Number of Cards:</label>
+                <input type="number" id="aiCount" name="count" value="5" min="1" max="20" required>
+            </div>
+
+            <div class="form-group">
+                <label for="aiDifficulty">Difficulty:</label>
+                <select id="aiDifficulty" name="difficulty" required>
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="mixed">Mixed (20% Easy, 50% Medium, 30% Hard)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Generate Cards</button>
+            <div id="aiProgress" style="display: none; margin-top: 10px;">
+                <p>Generating cards... This may take 30-60 seconds.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Create Deck Modal -->
+<div id="createDeckModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeCreateDeckModal()">&times;</span>
+        <h2>📚 Create New Deck</h2>
+        
+        <form id="createDeckForm">
+            <div class="form-group">
+                <label for="deckName">Deck Name:</label>
+                <input type="text" id="deckName" name="name" placeholder="Enter deck name..." required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="deckParent">Parent Deck (Optional):</label>
+                <select id="deckParent" name="parent_id">
+                    <option value="">-- Root Deck (No Parent) --</option>
+                    {% macro render_parent_option(node, level=0) %}
+                        <option value="{{ node.deck.id }}">{{ '  ' * level }}{{ '└─ ' if level > 0 else '' }}{{ node.deck.name }}</option>
+                        {% if node.children %}
+                            {% for child in node.children %}
+                                {{ render_parent_option(child, level + 1) }}
+                            {% endfor %}
+                        {% endif %}
+                    {% endmacro %}
+                    {% for node in deck_stats %}
+                        {{ render_parent_option(node) }}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create Deck</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: none;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 35px;
+    border: 2px solid rgba(74, 144, 226, 0.3);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 550px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 
+                0 0 40px rgba(74, 144, 226, 0.1);
+    position: relative;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-content h2 {
+    color: #fff;
+    margin: 0 0 25px 0;
+    font-size: 24px;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.close:hover {
+    color: #fff;
+    background: rgba(255, 77, 77, 0.2);
+    transform: rotate(90deg);
+}
+
+.form-group {
+    margin-bottom: 22px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    letter-spacing: 0.3px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid rgba(74, 144, 226, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: rgba(74, 144, 226, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.form-group select option {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 10px;
+}
+
+#aiForm .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+}
+
+#aiForm .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+    background: linear-gradient(135deg, #5ba3ff 0%, #4a90e2 100%);
+}
+
+#aiForm .btn-primary:active {
+    transform: translateY(0);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 10px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4a90e2 0%, #5ba3ff 50%, #4a90e2 100%);
+    background-size: 200% 100%;
+    animation: progress 2s linear infinite;
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+}
+
+#aiProgress p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+@keyframes progress {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+</style>
+
+<script>
+// Initialize Payal's 8 standard decks
+async function initializePayalDecks() {
+    if (!confirm('This will create 8 standard decks for Payal:\n\n' +
+                 'Class 11: Physics, Chemistry, Mathematics, Biology\n' +
+                 'Class 12: Physics, Chemistry, Mathematics, Biology\n\n' +
+                 'Continue?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/ai/initialize-payal-decks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message + '\n\n' +
+                  'Created: ' + result.created.length + ' decks\n' +
+                  'Already existed: ' + result.existing.length + ' decks');
+            location.reload();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to create decks. Check console for details.');
+    }
+}
+</script>
+
+<script src="{{ url_for('static', filename='js/ai_cards.js') }}"></script>
 {% endblock %}

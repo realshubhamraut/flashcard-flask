@@ -122,9 +122,23 @@
             <p>No cards in this deck.</p>
         </div>
     {% endif %}
-    <button onclick="openAIGeneratorModal()" class="btn btn-primary btn-lg">
-        🤖 Generate AI Cards
-    </button>
+    
+    <!-- Dual AI Card Generation Buttons -->
+    <div style="display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap;">
+        <button onclick="openAIGeneratorModal('payal')" class="btn btn-primary btn-lg" style="flex: 1; min-width: 200px;">
+            🎓 Generate AI Cards for Payal
+            <small style="display: block; font-size: 0.8em; opacity: 0.9; margin-top: 0.3rem;">
+                Maharashtra Board · MHT-CET · JEE · NEET
+            </small>
+        </button>
+        <button onclick="openAIGeneratorModal('shubham')" class="btn btn-success btn-lg" style="flex: 1; min-width: 200px;">
+            💻 Generate AI Cards for Shubham
+            <small style="display: block; font-size: 0.8em; opacity: 0.9; margin-top: 0.3rem;">
+                Programming · Data Science · Tech
+            </small>
+        </button>
+    </div>
+    
     <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Decks</a>
 </div>
 
@@ -203,10 +217,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // AI Generator Modal Functions
-function openAIGeneratorModal() {
+function openAIGeneratorModal(generatorType) {
     const modal = document.getElementById('ai-generator-modal');
+    modal.dataset.generatorType = generatorType || 'shubham'; // Default to Shubham if not specified
+    
+    // Update modal title based on generator type
+    const modalTitle = modal.querySelector('.modal-header h2');
+    if (generatorType === 'payal') {
+        modalTitle.innerHTML = '🎓 Generate Flashcards for Payal';
+        modalTitle.style.color = '#2563eb'; // Blue color
+    } else {
+        modalTitle.innerHTML = '💻 Generate Flashcards for Shubham';
+        modalTitle.style.color = '#16a34a'; // Green color
+    }
+    
     modal.style.display = 'flex';
-    loadModules();
+    loadModules(generatorType);
 }
 
 function closeAIGeneratorModal() {
@@ -226,8 +252,12 @@ function resetAIGeneratorForm() {
     document.getElementById('generate-btn').disabled = false;
 }
 
-function loadModules() {
-    fetch('/api/ai/modules')
+function loadModules(generatorType) {
+    const apiEndpoint = generatorType === 'payal' 
+        ? '/api/ai/modules-payal' 
+        : '/api/ai/modules';
+    
+    fetch(apiEndpoint)
         .then(response => response.json())
         .then(data => {
             const moduleSelect = document.getElementById('ai-module-select');
@@ -251,9 +281,15 @@ function loadModules() {
 function onModuleChange() {
     const module = document.getElementById('ai-module-select').value;
     const topicSelect = document.getElementById('ai-topic-select');
+    const modal = document.getElementById('ai-generator-modal');
+    const generatorType = modal.dataset.generatorType || 'shubham';
     
     if (module) {
-        fetch(`/api/ai/modules/${encodeURIComponent(module)}/topics`)
+        const apiEndpoint = generatorType === 'payal'
+            ? `/api/ai/modules-payal/${encodeURIComponent(module)}/topics`
+            : `/api/ai/modules/${encodeURIComponent(module)}/topics`;
+        
+        fetch(apiEndpoint)
             .then(response => response.json())
             .then(data => {
                 topicSelect.innerHTML = '<option value="">All topics (optional)</option>';
@@ -283,7 +319,9 @@ function generateAICards() {
     const topic = document.getElementById('ai-topic-select').value;
     const numCards = parseInt(document.getElementById('ai-num-cards').value);
     const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-    const deckId = document.getElementById('ai-generator-modal').dataset.deckId;
+    const modal = document.getElementById('ai-generator-modal');
+    const deckId = modal.dataset.deckId;
+    const generatorType = modal.dataset.generatorType || 'shubham';
     
     if (!module) {
         alert('Please select a module');
@@ -300,8 +338,13 @@ function generateAICards() {
     document.getElementById('ai-progress-message').textContent = 'Generating flashcards...';
     document.getElementById('generate-btn').disabled = true;
     
+    // Determine API endpoint based on generator type
+    const apiEndpoint = generatorType === 'payal'
+        ? `/api/ai/generate-payal/${deckId}`
+        : `/api/ai/generate-shubham/${deckId}`;
+    
     // Make API call
-    fetch(`/api/ai/generate/${deckId}`, {
+    fetch(apiEndpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

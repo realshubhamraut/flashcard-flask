@@ -1,0 +1,419 @@
+CLASS 12 (SYJC) - SCIENCE STREAM
+
+
+1. PHYSICS (Class 12)
+
+	•	1. Rotational Dynamics
+	◦	Circular Motion (Kinematics, Centripetal/Centrifugal Force)
+	◦	Applications (Vehicle on level/banked road, Conical Pendulum)
+	◦	Vertical Circular Motion
+	◦	Moment of Inertia (MI)
+	◦	K.E. of Rotation
+	◦	Theorem of Parallel and Perpendicular Axes
+	◦	Angular Momentum and its conservation
+	◦	Rolling Motion
+	•	2. Mechanical Properties of Fluids
+	◦	Fluid Statics (Pressure, Pascal’s Law, Measurement of Pressure)
+	◦	Surface Tension (Surface Energy, Angle of Contact, Capillarity)
+	◦	Fluid Dynamics (Streamline flow, Critical Velocity, Reynolds Number)
+	◦	Bernoulli’s Equation
+	•	3. Kinetic Theory of Gases and Radiation
+	◦	Behavior of Gas and Ideal Gas Equation
+	◦	Pressure of Ideal Gas
+	◦	RMS Speed
+	◦	Interpretation of Temperature
+	◦	Degrees of Freedom and Specific Heat Capacities (Mayer's Relation)
+	◦	Absorption, Reflection, Transmission of Heat Radiation
+	◦	Blackbody Radiation (Stefan-Boltzmann Law, Wien’s Displacement Law)
+	•	4. Thermodynamics
+	◦	Thermal Equilibrium and Zeroth Law
+	◦	Internal Energy, Work, Heat
+	◦	First Law of Thermodynamics
+	◦	Thermodynamic State Variables
+	◦	Thermodynamic Processes (Isothermal, Isobaric, Isochoric, Adiabatic)
+	◦	Heat Engines, Refrigerators, and Heat Pumps
+	◦	Second Law of Thermodynamics and Carnot Cycle
+	•	5. Oscillations
+	◦	Periodic and Oscillatory Motion
+	◦	Simple Harmonic Motion (SHM) - Differential Equation
+	◦	Acceleration, Velocity, Displacement of SHM
+	◦	Energy in SHM
+	◦	Simple Pendulum
+	◦	Angular SHM (Magnet vibrating in field)
+	◦	Damped and Forced Oscillations (Resonance)
+	•	6. Superposition of Waves
+	◦	Progressive Waves
+	◦	Reflection of Waves
+	◦	Superposition Principle
+	◦	Stationary Waves (Nodes, Antinodes)
+	◦	Vibrations of Air Columns (Pipes)
+	◦	Vibrations of Strings (Laws of Vibrating Strings)
+	◦	Beats
+	•	7. Wave Optics
+	◦	Corpuscular Theory vs Wave Theory
+	◦	Huygens’ Principle (Wavefronts/Wave Normals)
+	◦	Reflection and Refraction at Plane Surface (Wave Theory)
+	◦	Polarization (Brewster's Law)
+	◦	Interference (Young’s Double Slit Experiment)
+	◦	Diffraction (Single Slit)
+	•	8. Electrostatics
+	◦	Electric Potential and Potential Energy
+	◦	Relation between Field and Potential
+	◦	Equipotential Surfaces
+	◦	Electrostatics of Conductors and Dielectrics
+	◦	Capacitors and Capacitance (Parallel Plate, Series/Parallel combinations)
+	◦	Energy Stored in Capacitor
+	◦	Van de Graaff Generator
+	•	9. Current Electricity
+	◦	Kirchhoff’s Laws (Current Law, Voltage Law)
+	◦	Wheatstone Bridge (Metre Bridge application)
+	◦	Potentiometer (Principle and Applications)
+	◦	Galvanometer (MCG) - Conversion to Ammeter and Voltmeter
+	•	10. Magnetic Fields due to Electric Current
+	◦	Oersted’s Experiment
+	◦	Biot-Savart Law
+	◦	Force on a Moving Charge (Lorentz Force)
+	◦	Cyclotron Motion
+	◦	Force on a Current Carrying Conductor
+	◦	Ampere’s Circuital Law (Solenoid, Toroid)
+	•	11. Magnetic Materials
+	◦	Magnetization and Magnetic Intensity
+	◦	Magnetic Properties of Materials (Diamagnetic, Paramagnetic, Ferromagnetic)
+	◦	Curie Temperature
+	◦	Hysteresis Loop
+	◦	Permanent Magnets and Electromagnets
+	•	12. Electromagnetic Induction
+	◦	Magnetic Flux
+	◦	Faraday’s Laws of Induction
+	◦	Lenz’s Law
+	◦	Motional Electromotive Force
+	◦	Eddy Currents
+	◦	Self-Inductance and Mutual Inductance
+	◦	Transformers
+	•	13. AC Circuits
+	◦	AC Voltage applied to Resistor, Inductor, Capacitor
+	◦	Phasor Diagrams
+	◦	LCR Series Circuit (Impedance, Resonance)
+	◦	Power in AC Circuit (Power Factor)
+	◦	LC Oscillations
+	•	14. Dual Nature of Radiation and Matter
+	◦	Photoelectric Effect (Observations, Einstein’s Equation)
+	◦	Particle Nature of Light (Photon)
+	◦	Wave Nature of Matter (de Broglie Hypothesis)
+	◦	Davisson and Germer Experiment
+	•	15. Structure of Atoms and Nuclei
+	◦	Rutherford's Experiment
+	◦	Bohr’s Atomic Model (Postulates, Radii, Energy)
+	◦	Atomic Spectra (Hydrogen Series)
+	◦	Atomic Nucleus (Size, Mass Defect, Binding Energy)
+	◦	Radioactivity (Alpha, Beta, Gamma decay)
+	◦	Law of Radioactive Decay
+	•	16. Semiconductor Devices
+	◦	p-n Junction Diode characteristics recap
+	◦	Zener Diode (as Voltage Regulator)
+	◦	Photodiode, Solar Cell, LED
+	◦	Bipolar Junction Transistor (BJT) - Configuration and Action
+	◦	Transistor as an Amplifier and Switch
+	◦	Logic Gates (AND, OR, NOT, NAND, NOR)
+
+
+2. CHEMISTRY (Class 12)
+
+	•	1. Solid State
+	◦	Types of Solids (Crystalline vs Amorphous)
+	◦	Unit Cells (Primitive, BCC, FCC)
+	◦	Packing Efficiency
+	◦	Calculations involving Unit Cell Dimensions
+	◦	Crystal Defects (Point defects: Stoichiometric, Impurity, Non-stoichiometric)
+	◦	Electrical and Magnetic Properties (Band Theory)
+	•	2. Solutions
+	◦	Types of Solutions
+	◦	Solubility (Henry’s Law)
+	◦	Vapour Pressure of Liquid Solutions (Raoult’s Law)
+	◦	Colligative Properties (Lowering of VP, Elevation of BP, Depression of FP, Osmotic Pressure)
+	◦	Van’t Hoff Factor (Abnormal Molar Masses)
+	•	3. Ionic Equilibria
+	◦	Types of Electrolytes
+	◦	Acids and Bases Theories (Arrhenius, Bronsted-Lowry, Lewis)
+	◦	Ionization of Water and pH Scale
+	◦	Hydrolysis of Salts
+	◦	Buffer Solutions
+	◦	Solubility Product ($K_{sp}$) and Common Ion Effect
+	•	4. Chemical Thermodynamics
+	◦	Review of Terms (System, Surroundings, Functions)
+	◦	First Law (Enthalpy, Internal Energy)
+	◦	Enthalpy of Phase Transitions
+	◦	Thermochemistry (Hess’s Law, Bond Enthalpy)
+	◦	Entropy and Second Law
+	◦	Gibbs Energy and Spontaneity
+	•	5. Electrochemistry
+	◦	Electrochemical Cells
+	◦	Galvanic Cells and Electrode Potential
+	◦	Nernst Equation
+	◦	Conductivity (Molar, Equivalent) and Kohlrausch’s Law
+	◦	Electrolysis (Laws of Electrolysis)
+	◦	Batteries (Primary, Secondary) and Fuel Cells
+	◦	Corrosion
+	•	6. Chemical Kinetics
+	◦	Rate of Reaction (Average, Instantaneous)
+	◦	Factors affecting Rate
+	◦	Order and Molecularity
+	◦	Integrated Rate Laws (Zero and First Order)
+	◦	Half-Life
+	◦	Collision Theory (Activation Energy, Arrhenius Equation)
+	•	7. Elements of Groups 16, 17 and 18
+	◦	Occurrence and Electronic Configuration
+	◦	Group 16 (O, S) trends and compounds (Ozone, Sulphuric Acid)
+	◦	Group 17 (Halogens) trends and compounds (Chlorine, HCl)
+	◦	Group 18 (Noble Gases) properties
+	◦	Interhalogen Compounds
+	•	8. Transition and Inner Transition Elements
+	◦	d-Block Elements (Position, Electronic config, Trends in properties)
+	◦	Coloured ions, Magnetic properties, Catalytic properties
+	◦	Preparation of KMnO4 and K2Cr2O7
+	◦	f-Block Elements (Lanthanoids and Actinoids) - Contraction and Comparison
+	•	9. Coordination Compounds
+	◦	Werner’s Theory
+	◦	Ligands and Coordination Number
+	◦	IUPAC Nomenclature
+	◦	Isomerism in Complexes
+	◦	Bonding Theories (VBT, CFT)
+	◦	Applications of Coordination Compounds
+	•	10. Halogen Derivatives
+	◦	Classification and Nomenclature
+	◦	Methods of Preparation
+	◦	Physical Properties
+	◦	Optical Isomerism (Chirality)
+	◦	Chemical Properties (Nucleophilic Substitution: SN1 and SN2 mechanisms)
+	◦	Reactions of Haloarenes
+	◦	Polyhalogen Compounds
+	•	11. Alcohols, Phenols and Ethers
+	◦	Classification and Nomenclature
+	◦	Methods of Preparation
+	◦	Physical Properties (Hydrogen bonding)
+	◦	Chemical Reactions (Esterification, Dehydration, Oxidation)
+	◦	Reactions of Phenol (Acidity, Electrophilic substitution)
+	◦	Ethers (Preparation and Reactions)
+	•	12. Aldehydes, Ketones and Carboxylic Acids
+	◦	Nomenclature and Structure of Carbonyl Group
+	◦	Preparation Methods
+	◦	Nucleophilic Addition Reactions
+	◦	Oxidation and Reduction (Clemmensen, Wolff-Kishner)
+	◦	Aldol Condensation and Cannizzaro Reaction
+	◦	Carboxylic Acids (Acidity, Reactions)
+	•	13. Amines
+	◦	Classification and Nomenclature
+	◦	Preparation
+	◦	Physical Properties
+	◦	Chemical Reactions (Basicity, Carbylamine test, Acylation)
+	◦	Diazonium Salts (Preparation and Sandmeyer reaction)
+	•	14. Biomolecules
+	◦	Carbohydrates (Glucose structure, Glycosidic linkage)
+	◦	Proteins (Amino acids, Peptide bond, Primary to Quaternary structure)
+	◦	Enzymes and Vitamins
+	◦	Nucleic Acids (DNA/RNA structure)
+	•	15. Introduction to Polymer Chemistry
+	◦	Classification of Polymers
+	◦	Types of Polymerization (Addition, Condensation)
+	◦	Important Polymers (Polythene, Nylon, Polyester, Rubber, Bakelite)
+	◦	Biodegradable Polymers
+	•	16. Green Chemistry and Nanochemistry
+	◦	12 Principles of Green Chemistry
+	◦	Introduction to Nanochemistry
+	◦	Characteristic features of Nanoparticles
+	◦	Applications
+
+
+3. MATHEMATICS & STATISTICS (Class 12)
+
+
+Part 1
+
+	•	1. Mathematical Logic
+	◦	Statements and Logical Connectives (And, Or, Not, If-then, Iff)
+	◦	Truth Tables
+	◦	Tautology, Contradiction, Contingency
+	◦	Quantifiers and Duals
+	◦	Negation of compound statements
+	◦	Application to Switching Circuits
+	•	2. Matrices
+	◦	Elementary Transformations
+	◦	Inverse of a Matrix (Adjoint Method, Transformation Method)
+	◦	Application of Matrices (Solving Linear Equations by Inversion and Reduction)
+	•	3. Trigonometric Functions
+	◦	Trigonometric Equations and General Solutions
+	◦	Solution of Triangles (Sine Rule, Cosine Rule, Projection Rule)
+	◦	Inverse Trigonometric Functions (Properties, Principal Values)
+	•	4. Pair of Straight Lines
+	◦	Combined Equation of two lines
+	◦	Homogeneous Equation of degree two
+	◦	Angle between lines
+	◦	General Second Degree Equation
+	•	5. Vectors
+	◦	Vectors and their linear combination
+	◦	Section Formula
+	◦	Scalar (Dot) Product applications (Work done, Projection)
+	◦	Vector (Cross) Product applications (Area, Moment of force)
+	◦	Scalar Triple Product (Volume of parallelepiped)
+	•	6. Line and Plane
+	◦	Vector and Cartesian equations of a Line
+	◦	Distance of a point from a line
+	◦	Skew Lines and Shortest Distance
+	◦	Equation of a Plane (Normal form, Vector form)
+	◦	Angle between planes/lines
+	◦	Distance of a point from a plane
+	•	7. Linear Programming
+	◦	Convex Sets
+	◦	LPP Formulation
+	◦	Graphical Solution of LPP
+
+Part 2
+
+	•	1. Differentiation
+	◦	Derivatives of Composite Functions (Chain Rule)
+	◦	Derivatives of Inverse Trigonometric Functions
+	◦	Logarithmic Differentiation
+	◦	Implicit Functions
+	◦	Parametric Functions
+	◦	Higher Order Derivatives (Second order)
+	•	2. Applications of Derivatives
+	◦	Equations of Tangent and Normal
+	◦	Displacement, Velocity, Acceleration
+	◦	Approximations
+	◦	Rolle’s Theorem and LMVT
+	◦	Increasing and Decreasing Functions
+	◦	Maxima and Minima
+	•	3. Indefinite Integration
+	◦	Elementary Integration formulas
+	◦	Methods of Integration (Substitution, Parts, Partial Fractions)
+	◦	Integration of standard types
+	•	4. Definite Integration
+	◦	Fundamental Theorem of Calculus
+	◦	Properties of Definite Integrals
+	•	5. Application of Definite Integration
+	◦	Area under the curve
+	◦	Area between two curves
+	•	6. Differential Equations
+	◦	Order and Degree
+	◦	Formation of Differential Equation
+	◦	Solution of DE (Variable Separable, Homogeneous, Linear)
+	◦	Applications (Population growth, Radioactive decay, Newton's Law of Cooling)
+	•	7. Probability Distributions
+	◦	Random Variables (Discrete, Continuous)
+	◦	Probability Mass Function (PMF) and Probability Density Function (PDF)
+	◦	Cumulative Distribution Function (CDF)
+	◦	Expected Value and Variance
+	•	8. Binomial Distribution
+	◦	Bernoulli Trials
+	◦	Binomial Distribution Formula
+	◦	Mean and Variance of Binomial Distribution
+
+
+4. BIOLOGY (Class 12)
+
+	•	1. Reproduction in Lower and Higher Plants
+	◦	Asexual Reproduction (Vegetative Propagation)
+	◦	Sexual Reproduction (Structure of Anther, Microsporogenesis)
+	◦	Structure of Anatropous Ovule and Megasporogenesis
+	◦	Pollination and Outbreeding devices
+	◦	Double Fertilization
+	◦	Development of Endosperm and Embryo
+	◦	Seed and Fruit development (Apomixis, Parthenocarpy)
+	•	2. Reproduction in Lower and Higher Animals
+	◦	Asexual Reproduction in Animals
+	◦	Human Reproductive Systems (Male and Female)
+	◦	Gametogenesis (Spermatogenesis, Oogenesis)
+	◦	Menstrual Cycle
+	•	
+* Fertilization and Implantation
+* Embryonic Development (Blastulation, Gastrulation)
+* Placenta, Parturition, Lactation
+* Reproductive Health and Birth Control (Contraception, IVF, GIFT)
+	•	3. Inheritance and Variation
+	◦	Mendelian Inheritance (Monohybrid, Dihybrid)
+	◦	Deviations from Mendelian ratios (Incomplete dominance, Co-dominance, Multiple alleles/Blood groups)
+	◦	Chromosomal Theory of Inheritance
+	◦	Chromosomes (Structure, Linkage, Crossing Over)
+	◦	Sex Determination (Birds, Humans, Honey bees)
+	◦	Genetic Disorders (Thalassemia, Down's, Turner's, Klinefelter's)
+	•	4. Molecular Basis of Inheritance
+	◦	DNA as Genetic Material (Griffith, Avery, Hershey-Chase experiments)
+	◦	DNA Structure and Packaging
+	◦	DNA Replication
+	◦	Protein Synthesis (Central Dogma: Transcription, Translation, Genetic Code)
+* Regulation of Gene Expression (Lac Operon)
+* Human Genome Project
+* DNA Fingerprinting
+	•	5. Origin and Evolution of Life
+	◦	Chemical Evolution of Life (Urey-Miller experiment)
+	◦	Darwinism and Natural Selection
+	◦	Modern Synthetic Theory of Evolution
+	◦	Mechanism of Evolution (Mutation, Gene flow, Genetic drift, Hardy-Weinberg Principle)
+	◦	Adaptive Radiation
+	◦	Human Evolution
+	•	6. Plant Water Relations
+	◦	Properties of Water
+	◦	Water Potential, Diffusion, Osmosis, Plasmolysis
+	◦	Absorption of Water (Symplast/Apoplast)
+	◦	Ascent of Sap (Root Pressure, Transpiration Pull)
+	◦	Transpiration (Structure of Stomata, Opening/Closing mechanism)
+	◦	Translocation of Food (Mass Flow Hypothesis)
+	•	7. Plant Growth and Mineral Nutrition
+	◦	Phases of Growth
+	◦	Plant Growth Regulators (Auxins, Gibberellins, Cytokinins, Ethylene, ABA)
+	◦	Photoperiodism and Vernalization
+	◦	Mineral Nutrition (Macro and Micronutrients)
+	◦	Nitrogen Cycle and Biological Nitrogen Fixation
+	•	8. Respiration and Circulation
+	◦	Human Respiratory System
+	◦	Mechanism of Respiration (Breathing, Gas Exchange, Transport)
+	◦	Regulation of Breathing
+	◦	Blood Composition (Plasma, RBC, WBC, Platelets)
+	◦	Human Heart Structure and Pumping Action
+	◦	Conducting System of Heart and Cardiac Cycle
+	◦	Blood Vessels and Blood Pressure
+	◦	ECG and Lymphatic System
+	•	9. Control and Coordination
+	◦	Nervous System (CNS: Brain structure, PNS, ANS)
+	◦	Structure of Neuron and Synapse
+	◦	Reflex Action
+	◦	Sensory Receptors (Eye and Ear structure)
+	◦	Endocrine System (Hypothalamus, Pituitary, Thyroid, Adrenal, Pancreas, Gonads)
+	◦	Mechanism of Hormone Action
+	•	10. Human Health and Diseases
+	◦	Immunity (Innate, Acquired, Active/Passive)
+	◦	Structure of Antibody
+	◦	Vaccination
+	◦	Common Human Diseases (Malaria, Typhoid, Pneumonia, Amoebiasis, Ringworm)
+	◦	AIDS and Cancer
+	◦	Adolescence and Drug/Alcohol Abuse
+	•	11. Enhancement of Food Production
+	◦	Plant Breeding (Hybridization, Mutation breeding)
+	◦	Tissue Culture
+	◦	Single Cell Protein (SCP)
+	◦	Animal Husbandry (Dairy, Poultry, Apiculture, Fishery)
+	◦	Microbes in Human Welfare (Household, Industrial, Sewage treatment, Biogas, Biocontrol)
+	•	12. Biotechnology
+	◦	Principles of Biotechnology (Genetic Engineering)
+	◦	Tools (Restriction Enzymes, Vectors, Host)
+	◦	Methodology (PCR, Recombinant DNA)
+	◦	Applications (Health - Insulin, Agriculture - Bt Cotton, Transgenic animals)
+	◦	Bioethics and Biopiracy
+	•	13. Organisms and Populations
+	◦	Organism and Environment (Abiotic factors)
+	◦	Adaptations
+	◦	Population Attributes (Density, Growth models)
+	◦	Population Interactions (Predation, Parasitism, Commensalism, Mutualism)
+	•	14. Ecosystems and Energy Flow
+	◦	Structure and Function of Ecosystem
+	◦	Productivity and Decomposition
+	◦	Energy Flow (Food chain, Food web, Pyramids)
+	◦	Ecological Succession
+	◦	Nutrient Cycles (Carbon, Phosphorus)
+	•	15. Biodiversity, Conservation and Environmental Issues
+	◦	Levels of Biodiversity
+	◦	Loss of Biodiversity
+	◦	Conservation (In-situ, Ex-situ)
+	◦	Pollution (Air, Water, Noise, Solid Waste)
+	◦	Greenhouse Effect and Ozone Depletion
+	◦	Deforestation

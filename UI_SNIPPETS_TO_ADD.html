@@ -1,0 +1,8 @@
+<!-- Add this button to index.html after the "Create New Deck" button -->
+
+<button onclick="initializeModuleDecks()" class="btn btn-secondary" id="init-decks-btn" style="margin-left: 1rem;">
+    🚀 Initialize Module Decks
+</button>
+
+<!-- Add this script at the bottom of index.html before {% endblock %} -->
+<script src="{{ url_for('static', filename='js/ai_generator.js') }}"></script>

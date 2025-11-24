@@ -1,16 +1,16 @@
-# Flashcard Flask - Spaced Repetition Quiz App
+# MemFlash - AI-Powered Flashcard App
 
-A full-stack spaced repetition quiz web application built entirely with Python and Flask. Features an Anki-style SM-2 algorithm for optimized learning.
+A full-stack flashcard web application built with Python and Flask. Features AI-powered card generation using Google Gemini API.
 
 ## Features
 
-- 🧠 **Spaced Repetition Algorithm** - SM-2 algorithm similar to Anki
-- � **User Authentication** - Login/logout with isolated user data
-- �📚 **Deck Management** - Import quiz decks from JSON files
+- 🤖 **AI Card Generation** - Generate flashcards using Google Gemini API
+- 👤 **User Authentication** - Login/logout with isolated user data
+- 📚 **Deck Management** - Import quiz decks from JSON files or generate with AI
 - 💡 **Rich Question Format** - Support for hints, explanations, references, and code snippets
-- 🎨 **Syntax Highlighting** - Python code snippets with proper highlighting
+- 🎨 **Syntax Highlighting** - Code snippets with proper highlighting
 - 🌙 **Dark Mode** - Toggle between light and dark themes
-- 📊 **Statistics** - Track daily reviews, accuracy, and progress
+- 📊 **Statistics** - Track daily reviews and accuracy
 - 💾 **Progress Tracking** - SQLite database stores all user progress
 - 📱 **Responsive Design** - Works on desktop and mobile
 - 🎯 **Clean UI** - Modern design with Inter, Source Serif 4, and JetBrains Mono fonts

@@ -26,13 +26,13 @@
                 {% endif %}
                 
                 <div class="card-question">
-                    <h3>{{ card.question | e }}</h3>
+                    <h3 class="render-content" data-raw-content="{{ card.question | e }}">{{ card.question | e }}</h3>
                 </div>
                 
                 {% if card.hint %}
                     <div class="card-hint">
                         <button class="hint-toggle" onclick="toggleHint(this)">💡 Show Hint</button>
-                        <div class="hint-content" style="display: none;">
+                        <div class="hint-content render-content" style="display: none;" data-raw-content="{{ card.hint | e }}">
                             {{ card.hint | e }}</div>
                     </div>
                 {% endif %}
@@ -51,7 +51,7 @@
                                         data-index="{{ loop.index0 }}"
                                         onclick="handleOptionClick(this, {{ card.id }}, {{ card.correct_answer }}, {{ loop.index0 }}); return false;">
                                     <span class="option-letter">{{ 'ABCD'[loop.index0] }}</span>
-                                    <span class="option-text">{{ option | e }}</span>
+                                    <span class="option-text render-content" data-raw-content="{{ option | e }}">{{ option | e }}</span>
                                 </button>
                                 <button class="trippy-btn" 
                                         title="Mark as trippy"
@@ -76,7 +76,7 @@
                     {% if card.description %}
                         <div class="card-description">
                             <h4>Explanation</h4>
-                            <p>{{ card.description | e }}</p>
+                            <p class="render-content" data-raw-content="{{ card.description | e }}">{{ card.description | e }}</p>
                         </div>
                     {% endif %}
                     
@@ -402,9 +402,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Process all content with code and math rendering
+    processAllContent();
 });
+
+// Function to process all render-content elements
+function processAllContent() {
+    document.querySelectorAll('.render-content').forEach(element => {
+        const rawContent = element.getAttribute('data-raw-content');
+        if (rawContent) {
+            const rendered = renderContent(rawContent);
+            element.innerHTML = rendered;
+        }
+    });
+    
+    // After rendering HTML, process code highlighting and math
+    processContent();
+}
 
 console.log('All inline functions loaded successfully');
 </script>
+<script src="{{ url_for('static', filename='js/content-renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/study.js') }}?v={{ range(1, 10000) | random }}"></script>
 {% endblock %}
