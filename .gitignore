@@ -44,6 +44,5 @@ Thumbs.db
 *.log
 instance/*
 !instance/.gitkeep
-
 .env
 
