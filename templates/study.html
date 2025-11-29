@@ -425,4 +425,28 @@ console.log('All inline functions loaded successfully');
 </script>
 <script src="{{ url_for('static', filename='js/content-renderer.js') }}"></script>
 <script src="{{ url_for('static', filename='js/study.js') }}?v={{ range(1, 10000) | random }}"></script>
+<script>
+// Warn user before leaving study session
+window.addEventListener('beforeunload', function(e) {
+    if (sessionInProgress && hasUnsavedProgress) {
+        const message = 'You have a study session in progress. Are you sure you want to leave?';
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+    }
+});
+
+// Clear warning when navigating intentionally
+function clearSessionWarning() {
+    hasUnsavedProgress = false;
+}
+
+// Add click listeners to navigation links
+document.addEventListener('DOMContentLoaded', function() {
+    // Clear warning when clicking navbar links
+    document.querySelectorAll('nav a').forEach(link => {
+        link.addEventListener('click', clearSessionWarning);
+    });
+});
+</script>
 {% endblock %}

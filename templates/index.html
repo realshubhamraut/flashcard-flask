@@ -8,6 +8,11 @@
     <div class="header-actions">
         <button onclick="openCreateDeckModal()" class="btn btn-secondary">+ New Deck</button>
         <a href="{{ url_for('import_deck') }}" class="btn btn-primary">+ Import Deck</a>
+        {% if current_user.username.lower() in ['payal', 'shubham'] %}
+        <button onclick="createUserDecks()" class="btn btn-secondary" id="create-decks-btn" style="margin-left: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+            🚀 Create Decks and Subdecks
+        </button>
+        {% endif %}
     </div>
 </div>
 
@@ -30,9 +35,6 @@
                 <li>Class 11 & 12 syllabus</li>
                 <li>Academic MCQs (no coding)</li>
             </ul>
-            <button onclick="initializePayalDecks()" class="btn btn-secondary" style="width: 100%; margin-bottom: 0.75rem; background: #64748b; font-size: 0.9rem;">
-                📚 Create 8 Standard Decks
-            </button>
             <button onclick="openAIModal('payal')" class="btn btn-primary" style="width: 100%; background: #2563eb;">
                 Generate Cards for Payal
             </button>
@@ -104,7 +106,7 @@
                                 {% endif %}
                                 
                                 <a href="{{ url_for('deck_detail', deck_id=node.deck.id) }}" class="deck-link">
-                                    <span class="deck-name-display" id="deck-name-{{ node.deck.id }}">{{ node.deck.name }}</span>
+                                    <span class="deck-name-display {% if node.deck.parent_id is none %}parent-deck-name{% endif %}" id="deck-name-{{ node.deck.id }}">{{ node.deck.name }}</span>
                                 </a>
                                 
                                 <input type="text" 
@@ -207,6 +209,63 @@ let draggedDeckId = null;
 // Drag and drop functions
 let draggedElement = null;
 let dropIndicator = null;
+const deckCollapseStateKey = 'deckCollapseState:{{ current_user.id }}';
+const COLLAPSED_ICON = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4z"/></svg>`;
+const EXPANDED_ICON = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4z"/></svg>`;
+
+function loadDeckCollapseState() {
+    if (typeof window === 'undefined' || !window.localStorage) {
+        return {};
+    }
+
+    try {
+        const stored = localStorage.getItem(deckCollapseStateKey);
+        return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+        console.warn('Unable to read deck collapse state', error);
+        return {};
+    }
+}
+
+function saveDeckCollapseState(state) {
+    if (typeof window === 'undefined' || !window.localStorage) {
+        return;
+    }
+
+    try {
+        localStorage.setItem(deckCollapseStateKey, JSON.stringify(state));
+    } catch (error) {
+        console.warn('Unable to save deck collapse state', error);
+    }
+}
+
+function updateCollapseToggleIcon(row, collapsed) {
+    const toggle = row.querySelector('.collapse-toggle');
+    if (!toggle) {
+        return;
+    }
+    toggle.innerHTML = collapsed ? COLLAPSED_ICON : EXPANDED_ICON;
+}
+
+function applyDeckCollapseState(stateOverride) {
+    const state = stateOverride || loadDeckCollapseState();
+    const rows = document.querySelectorAll('.deck-row');
+    const collapseContext = [];
+
+    rows.forEach(row => {
+        const level = parseInt(row.dataset.level, 10);
+        collapseContext.length = level;
+        const parentCollapsed = level === 0 ? false : (collapseContext[level - 1] || false);
+        const deckId = row.dataset.deckId;
+        const collapsed = Boolean(state[deckId]);
+        row.dataset.collapsed = collapsed ? 'true' : 'false';
+        updateCollapseToggleIcon(row, collapsed);
+        row.style.display = parentCollapsed ? 'none' : '';
+
+        const hasChildren = !!row.querySelector('.collapse-toggle');
+        collapseContext[level] = parentCollapsed || (hasChildren && collapsed);
+    });
+}
 
 function handleDragStart(event, deckId) {
     draggedDeckId = deckId;
@@ -326,29 +385,19 @@ function moveDeckToParent(deckId, newParentId) {
 
 // Collapse/expand deck children
 function toggleDeck(deckId) {
-    const currentRow = document.querySelector(`tr[data-deck-id="${deckId}"]`);
-    const toggle = currentRow.querySelector('.collapse-toggle');
-    const currentLevel = parseInt(currentRow.dataset.level);
-    
-    let nextRow = currentRow.nextElementSibling;
-    let isCollapsed = toggle.innerHTML.includes('path d="M4 6l4 4'); // Check if expanded (down arrow)
-    
-    // Toggle icon (rotate)
-    if (isCollapsed) {
-        toggle.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M6 4l4 4-4 4z"/></svg>';
+    const state = loadDeckCollapseState();
+    const row = document.querySelector(`tr[data-deck-id="${deckId}"]`);
+    const currentlyCollapsed = row && row.dataset.collapsed === 'true';
+    const newCollapsed = !currentlyCollapsed;
+
+    if (newCollapsed) {
+        state[deckId] = true;
     } else {
-        toggle.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 6l4 4 4-4z"/></svg>';
+        delete state[deckId];
     }
-    
-    // Show/hide child rows
-    while (nextRow && parseInt(nextRow.dataset.level) > currentLevel) {
-        if (isCollapsed) {
-            nextRow.style.display = '';
-        } else {
-            nextRow.style.display = 'none';
-        }
-        nextRow = nextRow.nextElementSibling;
-    }
+
+    saveDeckCollapseState(state);
+    applyDeckCollapseState(state);
 }
 
 function enableDeckEdit(deckId) {
@@ -525,6 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
             closeCreateDeckModal();
         }
     });
+        applyDeckCollapseState();
 });
 
 function makeRootDeck(deckId) {
@@ -552,6 +602,7 @@ function makeRootDeck(deckId) {
     <div class="modal-content">
         <span class="close" onclick="closeAIModal()">&times;</span>
         <h2>🤖 Generate AI Flashcards</h2>
+        <p style="margin-top: -0.5rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">No duplicate questions will be added. Topics generate cards only for the selection.</p>
         
         <form id="aiForm">
             <div class="form-group">
@@ -580,12 +631,12 @@ function makeRootDeck(deckId) {
             </div>
 
             <div class="form-group">
-                <label>Topics (select multiple):</label>
-                <div id="aiTopicCheckboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 10px; background: rgba(0,0,0,0.2);">
-                    <small style="color: rgba(255,255,255,0.5);">Select a module first</small>
-                </div>
+                <label for="aiTopic">Topic (optional)</label>
+                <select id="aiTopic" name="topic" disabled style="width: 100%; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.2); color: white;">
+                    <option value="">All topics (general overview)</option>
+                </select>
                 <small style="color: rgba(255,255,255,0.6); font-size: 12px; display: block; margin-top: 5px;">
-                    💡 Check one or more topics, or leave all unchecked for all topics
+                    💡 Choose a module to enable topic-specific generation
                 </small>
             </div>
 
@@ -848,6 +899,41 @@ async function initializePayalDecks() {
     } catch (error) {
         console.error('Error:', error);
         alert('Failed to create decks. Check console for details.');
+    }
+}
+
+// Create user-specific deck hierarchy
+async function createUserDecks() {
+    const button = document.getElementById('create-decks-btn');
+    button.disabled = true;
+    button.textContent = '⏳ Creating...';
+    
+    try {
+        const response = await fetch('/api/create-user-decks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.created === 0) {
+                alert('✅ ' + result.message);
+                button.textContent = '✓ Already Created';
+            } else {
+                alert('✅ ' + result.message + '\n\nCreated: ' + result.created + ' new decks/subdecks\nExisting: ' + result.existing);
+                location.reload();
+            }
+        } else {
+            alert('❌ Error: ' + result.error);
+            button.disabled = false;
+            button.textContent = '🚀 Create Decks and Subdecks';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to create decks. Check console for details.');
+        button.disabled = false;
+        button.textContent = '🚀 Create Decks and Subdecks';
     }
 }
 </script>

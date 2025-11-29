@@ -19,7 +19,11 @@ function closeAIGeneratorModal() {
 
 function resetAIGeneratorForm() {
     document.getElementById('ai-module-select').value = '';
-    document.getElementById('ai-topic-select').innerHTML = '<option value="">All topics</option>';
+    const topicSelect = document.getElementById('ai-topic-select');
+    if (topicSelect) {
+        topicSelect.innerHTML = '<option value="">All topics</option>';
+        topicSelect.disabled = true;
+    }
     document.getElementById('ai-card-count').value = '50';
     document.querySelectorAll('input[name="ai-difficulty"]').forEach(radio => {
         radio.checked = radio.value === 'medium';
@@ -56,6 +60,7 @@ function onModuleChange() {
     const selectedOption = moduleSelect.options[moduleSelect.selectedIndex];
     
     topicSelect.innerHTML = '<option value="">All topics (general overview)</option>';
+    topicSelect.disabled = true;
     
     if (selectedOption && selectedOption.dataset.topics) {
         const topics = JSON.parse(selectedOption.dataset.topics);
@@ -65,6 +70,9 @@ function onModuleChange() {
             option.textContent = topic;
             topicSelect.appendChild(option);
         });
+        if (topics.length > 0) {
+            topicSelect.disabled = false;
+        }
     }
 }
 
@@ -104,7 +112,7 @@ function generateAICards() {
         },
         body: JSON.stringify({
             deck_id: deckId,
-            module_name: moduleName,
+            module: moduleName,
             topic: topic || null,
             count: count,
             difficulty: difficulty

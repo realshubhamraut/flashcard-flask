@@ -5,14 +5,47 @@ Exam Focus: MHT-CET, JEE, NEET
 """
 
 from typing import Dict, List, Optional
-import google.generativeai as genai
+import importlib.metadata as _std_metadata
+try:
+    import importlib_metadata as _backport_metadata
+except ImportError:  # pragma: no cover - optional dependency
+    _backport_metadata = None
 import os
 import json
+import re
+
+# Compat shim for Python <3.10 where packages_distributions is missing
+if not hasattr(_std_metadata, 'packages_distributions'):
+    if _backport_metadata and hasattr(_backport_metadata, 'packages_distributions'):
+        _std_metadata.packages_distributions = _backport_metadata.packages_distributions  # type: ignore[attr-defined]
+    else:
+        def _empty_packages_distributions():
+            return {}
+
+        _std_metadata.packages_distributions = _empty_packages_distributions  # type: ignore[attr-defined]
+
+import google.generativeai as genai
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
-# Payal's Subject Structure
+PAYAL_CLASS_LABELS = {
+    "class_11": "Class 11",
+    "class_12": "Class 12"
+}
+
+PAYAL_CLASS_ORDER = ["class_11", "class_12"]
+
+PAYAL_CLASS_LABEL_TO_KEY = {label: key for key, label in PAYAL_CLASS_LABELS.items()}
+
+PAYAL_SUBJECT_ORDER = [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology"
+]
+
+# Payal's Subject Structure (textbook order)
 PAYAL_SUBJECTS = {
     "Physics": {
         "class_11": [
@@ -26,9 +59,9 @@ PAYAL_SUBJECTS = {
             "Sound",
             "Optics",
             "Electrostatics",
-            "Current Electricity",
+            "Electric Current Through Conductors",
             "Magnetism",
-            "Electromagnetic Waves",
+            "Electromagnetic Waves and Communication System",
             "Semiconductors"
         ],
         "class_12": [
@@ -41,7 +74,7 @@ PAYAL_SUBJECTS = {
             "Wave Optics",
             "Electrostatics",
             "Current Electricity",
-            "Magnetic Fields",
+            "Magnetic Fields due to Electric Current",
             "Magnetic Materials",
             "Electromagnetic Induction",
             "AC Circuits",
@@ -52,17 +85,22 @@ PAYAL_SUBJECTS = {
     },
     "Chemistry": {
         "class_11": [
-            "Basic Concepts of Chemistry",
-            "Analytical Chemistry",
-            "Atomic Structure",
+            "Some Basic Concepts of Chemistry",
+            "Introduction to Analytical Chemistry",
+            "Basic Analytical Techniques",
+            "Structure of Atom",
             "Chemical Bonding",
             "Redox Reactions",
-            "Periodic Table",
+            "Modern Periodic Table",
+            "Elements of Group 1 and 2",
+            "Elements of Group 13, 14 and 15",
             "States of Matter",
+            "Adsorption and Colloids",
             "Chemical Equilibrium",
-            "Organic Chemistry Fundamentals",
+            "Nuclear Chemistry and Radioactivity",
+            "Basic Principles of Organic Chemistry",
             "Hydrocarbons",
-            "Chemistry in Daily Life"
+            "Chemistry in Everyday Life"
         ],
         "class_12": [
             "Solid State",
@@ -71,6 +109,7 @@ PAYAL_SUBJECTS = {
             "Chemical Thermodynamics",
             "Electrochemistry",
             "Chemical Kinetics",
+            "Elements of Groups 16, 17 and 18",
             "Transition and Inner Transition Elements",
             "Coordination Compounds",
             "Halogen Derivatives",
@@ -78,24 +117,29 @@ PAYAL_SUBJECTS = {
             "Aldehydes, Ketones and Carboxylic Acids",
             "Amines",
             "Biomolecules",
-            "Polymers"
+            "Introduction to Polymer Chemistry",
+            "Green Chemistry and Nanochemistry"
         ]
     },
     "Mathematics": {
         "class_11": [
+            "Angle and its Measurement",
             "Trigonometry - I",
             "Trigonometry - II",
             "Determinants and Matrices",
             "Straight Line",
             "Circle",
             "Conic Sections",
+            "Measures of Dispersion",
             "Probability",
             "Complex Numbers",
             "Sequences and Series",
-            "Permutations and Combinations",
+            "Permutations and Combination",
+            "Method of Induction and Binomial Theorem",
             "Sets and Relations",
             "Functions",
             "Limits",
+            "Continuity",
             "Differentiation"
         ],
         "class_12": [
@@ -104,13 +148,13 @@ PAYAL_SUBJECTS = {
             "Trigonometric Functions",
             "Pair of Straight Lines",
             "Vectors",
-            "Three Dimensional Geometry",
             "Line and Plane",
             "Linear Programming",
             "Differentiation",
-            "Applications of Derivative",
+            "Applications of Derivatives",
             "Indefinite Integration",
             "Definite Integration",
+            "Application of Definite Integration",
             "Differential Equations",
             "Probability Distributions",
             "Binomial Distribution"
@@ -127,8 +171,8 @@ PAYAL_SUBJECTS = {
             "Cell Division",
             "Plant Tissues and Anatomy",
             "Morphology of Flowering Plants",
-            "Animal Tissues",
-            "Study of Cockroach",
+            "Animal Tissue",
+            "Study of Animal Type - Cockroach",
             "Photosynthesis",
             "Respiration and Energy Transfer",
             "Human Nutrition",
@@ -146,11 +190,11 @@ PAYAL_SUBJECTS = {
             "Respiration and Circulation",
             "Control and Coordination",
             "Human Health and Diseases",
-            "Enhancement in Food Production",
+            "Enhancement of Food Production",
             "Biotechnology",
             "Organisms and Populations",
             "Ecosystems and Energy Flow",
-            "Biodiversity and Conservation"
+            "Biodiversity, Conservation and Environmental Issues"
         ]
     }
 }
@@ -182,11 +226,14 @@ NEET: Biology-heavy, NCERT-based, conceptual + application, moderate difficulty
 """
 
 
+INVALID_ESCAPE_RE = re.compile(r'\\(?!["\\/bfnrtu])')
+
+
 class PayalFlashcardGenerator:
     """Generate exam-focused MCQs for Payal's preparation"""
     
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def generate_cards(
         self, 
@@ -250,7 +297,7 @@ Return ONLY a valid JSON array with this EXACT structure:
     "correct_answer": 0,
     "difficulty": "{difficulty}",
     "hint": "Helpful hint without revealing answer. Can use $math$ notation.",
-    "explanation": "Detailed step-by-step explanation. Use $$formula$$ for block equations. Show all working for numerical problems.",
+    "explanation": "Clear explanation with proper formatting.\\n\\nFor step-by-step solutions:\\n1. State the given data\\n2. Write the formula: $formula$\\n3. Substitute values and solve\\n\\nUse line breaks for clarity, NOT markdown bold/italic.",
     "reference": "Maharashtra Board Class X Physics Ch.Y, NCERT Physics Part-I Section Z"
   }}
 ]
@@ -260,6 +307,9 @@ IMPORTANT FORMATTING RULES:
 - Use $$ for block equations: $$x = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}}$$
 - Escape backslashes in LaTeX: \\frac, \\sqrt, \\pi, etc.
 - correct_answer is 0-indexed (0=A, 1=B, 2=C, 3=D)
+- NO markdown formatting (**, *, etc.) - use plain text with line breaks
+- Use \\n\\n for paragraph breaks in explanations
+- Use simple numbered points (1., 2., 3.) or bullet points (•) for lists
 - NO code blocks, NO programming questions
 - Focus on Physics/Chemistry/Biology/Mathematics academic content
 
@@ -276,19 +326,17 @@ Generate {num_cards} questions now:
                     max_output_tokens=8192,
                 )
             )
-            
-            # Extract JSON from response
-            content = response.text.strip()
-            
-            # Remove markdown code blocks if present
-            if content.startswith('```'):
-                content = content.split('```')[1]
-                if content.startswith('json'):
-                    content = content[4:]
-                content = content.strip()
-            
-            # Parse JSON
-            cards = json.loads(content)
+
+            raw_content = self._extract_response_text(response)
+            if not raw_content:
+                print("Generation Error: Empty response from Gemini")
+                return []
+
+            # Remove markdown fences and clean payload before parsing
+            content = self._strip_code_fences(raw_content).strip()
+
+            # Parse JSON with fallbacks for minor formatting glitches
+            cards = self._loads_with_fallbacks(content)
             
             # Validate and clean cards
             validated_cards = []
@@ -300,11 +348,136 @@ Generate {num_cards} questions now:
             
         except json.JSONDecodeError as e:
             print(f"JSON Parse Error: {e}")
-            print(f"Response: {content[:500]}")
+            print(f"Response: {raw_content[:500] if 'raw_content' in locals() else ''}")
             return []
         except Exception as e:
             print(f"Generation Error: {e}")
             return []
+
+    def _extract_response_text(self, response) -> str:
+        """Safely extract text from Gemini response, even when finish_reason is truncated."""
+        try:
+            text = response.text
+            if text:
+                return text
+        except Exception:
+            pass
+
+        for candidate in getattr(response, 'candidates', []) or []:
+            content = getattr(candidate, 'content', None)
+            parts = getattr(content, 'parts', []) if content else []
+            for part in parts:
+                text = getattr(part, 'text', None)
+                if text:
+                    return text
+        return ''
+
+    def _strip_code_fences(self, text: str) -> str:
+        text = text.strip()
+        if text.startswith('```'):
+            parts = text.split('```')
+            for part in parts:
+                candidate = part.strip()
+                if not candidate:
+                    continue
+                if candidate.startswith('json'):
+                    candidate = candidate[4:].strip()
+                return candidate
+        return text
+
+    def _strip_to_json_array(self, text: str) -> str:
+        start = text.find('[')
+        end = text.rfind(']')
+        if start != -1 and end != -1 and end > start:
+            return text[start:end + 1]
+        return text
+
+    def _sanitize_invalid_escapes(self, text: str) -> str:
+        return INVALID_ESCAPE_RE.sub(lambda _: r'\\', text)
+
+    def _repair_json_string(self, text: str) -> str:
+        if not text:
+            return text
+
+        result = []
+        in_string = False
+        i = 0
+        valid_escapes = '"\\/bfnrtu'
+
+        while i < len(text):
+            ch = text[i]
+            prev = text[i - 1] if i > 0 else ''
+
+            if ch == '"' and prev != '\\':
+                in_string = not in_string
+                result.append(ch)
+                i += 1
+                continue
+
+            if in_string:
+                if ch in ('\n', '\r'):
+                    result.append('\\n')
+                    i += 1
+                    continue
+
+                if ch == '\\':
+                    if i + 1 >= len(text):
+                        result.append('\\\\')
+                        i += 1
+                        continue
+
+                    nxt = text[i + 1]
+
+                    if nxt in valid_escapes:
+                        result.append('\\')
+                        result.append(nxt)
+                        i += 2
+                        continue
+
+                    if nxt in ('\n', '\r'):
+                        result.append('\\n')
+                        i += 2
+                        continue
+
+                    # Unknown escape like \left -> ensure the backslash is escaped
+                    result.append('\\\\')
+                    i += 1
+                    continue
+
+            result.append(ch)
+            i += 1
+
+        return ''.join(result)
+
+    def _loads_with_fallbacks(self, content: str) -> List[Dict]:
+        attempts = []
+        attempts.append(content)
+        trimmed = self._strip_to_json_array(content)
+        if trimmed != content:
+            attempts.append(trimmed)
+        repaired = self._repair_json_string(trimmed)
+        if repaired != trimmed:
+            attempts.append(repaired)
+        sanitized = self._sanitize_invalid_escapes(repaired)
+        if sanitized != trimmed:
+            attempts.append(sanitized)
+
+        last_error = None
+        for attempt in attempts:
+            if not attempt:
+                continue
+            try:
+                return json.loads(attempt)
+            except json.JSONDecodeError as exc:
+                last_error = exc
+                try:
+                    return json.loads(attempt, strict=False)
+                except json.JSONDecodeError as exc2:
+                    last_error = exc2
+                    continue
+        if last_error:
+            raise last_error
+        raise json.JSONDecodeError('Unable to parse JSON response', content, 0)
     
     def _validate_card(self, card: Dict) -> bool:
         """Validate card has required fields"""

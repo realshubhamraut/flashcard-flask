@@ -3,45 +3,444 @@ import json
 from typing import Dict, List, Optional
 import google.generativeai as genai
 
-# Syllabus module definitions
+# Syllabus module definitions (textbook order for Shubham)
 SYLLABUS_MODULES = {
     "Linux Programming": {
-        "hours": 50,
-        "topics": ["Installation (Ubuntu and CentOS)", "Basics of Linux", "Configuring Linux", "Shells, Commands, and Navigation", "Common Text Editors", "Administering Linux", "Users and Groups", "Linux shell scripting", "shell computing", "enterprise computing", "Remote access", "Git/GitHub/Gitlab", "Version control systems", "Cloud Computing Basics", "AWS EC2/Lambda", "Azure VMs", "Data Factory", "SAAS/PAAS/IAAS", "Deploy application over cloud"]
+        "hours": 40,
+        "topics": [
+            "Installation (Ubuntu and CentOS)",
+            "Basics of Linux",
+            "Configuring Linux",
+            "Shells, Commands, and Navigation",
+            "Common Text Editors",
+            "Administering Linux",
+            "Introduction to Users and Groups",
+            "Linux Shell Scripting",
+            "Shell Computing",
+            "Introduction to Enterprise Computing",
+            "Remote Access"
+        ]
+    },
+    "Introduction to Git/GitHub/GitLab": {
+        "hours": 20,
+        "topics": [
+            "Introduction to Version Control Systems",
+            "Creating GitHub Repository",
+            "Using Git – Core Commands",
+            "Creating Projects on GitHub and GitLab",
+            "Managing Code Repositories"
+        ]
+    },
+    "Introduction to Cloud Computing": {
+        "hours": 40,
+        "topics": [
+            "Cloud Computing Basics",
+            "Understanding Cloud Vendors (AWS EC2, Lambda, Azure VMs, Azure Data Factory)",
+            "Definition, Characteristics, and Components",
+            "Cloud Provider Landscape",
+            "Software as a Service (SaaS)",
+            "Platform as a Service (PaaS)",
+            "Infrastructure as a Service (IaaS)",
+            "Organizational Cloud Scenarios",
+            "Benefits and Limitations",
+            "Deploying Applications over Cloud",
+            "Comparison of SaaS, PaaS, and IaaS",
+            "Cloud Products and Solutions",
+            "Compute Products and Services",
+            "Elastic Cloud Compute",
+            "Working with Cloud Dashboards",
+            "Deploying AI and Analytics Workloads"
+        ]
     },
     "Python Programming": {
         "hours": 80,
-        "topics": ["Python basics", "If-else statements", "Nested if-else", "Looping (For, While)", "Control Structure", "Break/Continue/Pass", "Strings and Tuples", "Working with Lists", "Files and Pickling", "Modules", "Dictionaries", "Dictionary Comprehension", "Functions", "Functional Programming", "Lists and Tuples operations", "Matplotlib/Seaborn visualization", "OOPs concept", "Class and object", "Inheritance", "Overloading/Overriding", "Data hiding", "Generators", "Decorators", "Exception Handling", "Try-finally clause", "User Defined Exceptions", "Data wrangling", "Data cleaning", "Load images/audio with libraries", "Python virtual environment", "Logging in Python"]
+        "topics": [
+            "Python Basics",
+            "If, If-Else, and Nested If-Else",
+            "Looping Constructs (For, While, Nested)",
+            "Control Structures",
+            "Break, Continue, and Pass",
+            "Strings and Tuples",
+            "Accessing Strings",
+            "String Operations and Slices",
+            "Working with Lists",
+            "List Operations, Functions, and Methods",
+            "Files and Pickling",
+            "Modules",
+            "Dictionaries",
+            "Dictionary Comprehension",
+            "Functions and Functional Programming",
+            "Managing Values in Lists",
+            "Introducing Tuples",
+            "Matplotlib and Seaborn Visualization",
+            "OOP Concepts",
+            "Classes and Objects",
+            "Attributes and Methods",
+            "Inheritance",
+            "Overloading and Overriding",
+            "Data Hiding",
+            "Generators",
+            "Decorators",
+            "Exception Handling",
+            "Except and Try-Finally Clauses",
+            "User Defined Exceptions",
+            "Data Wrangling",
+            "Data Cleaning",
+            "Loading Images and Audio with Python Libraries",
+            "Creating Python Virtual Environments",
+            "Logging in Python"
+        ]
     },
     "R Programming": {
-        "hours": 70,
-        "topics": ["Reading and Getting Data into R", "Exporting Data from R", "Data Objects-Data Types & Data Structure", "Viewing Named Objects", "Structure of Data Items", "Manipulating and Processing Data in R", "Creating/Accessing/sorting data frames", "Extracting/Combining/Merging/reshaping data frames", "Control Structures", "Functions in R (numeric, character, statistical)", "working with objects", "Viewing Objects within Objects", "Constructing Data Objects", "Packages - Tidyverse, Dplyr, Tidyr", "Queuing Theory", "Case Study"]
+        "hours": 60,
+        "topics": [
+            "Reading and Getting Data into R",
+            "Exporting Data from R",
+            "Data Objects, Types, and Structures",
+            "Viewing Named Objects",
+            "Structure of Data Items",
+            "Manipulating and Processing Data in R",
+            "Creating and Sorting Data Frames",
+            "Extracting, Combining, Merging, and Reshaping Data Frames",
+            "Control Structures",
+            "Functions in R (Numeric, Character, Statistical)",
+            "Working with Objects",
+            "Viewing Objects within Objects",
+            "Constructing Data Objects",
+            "Packages – Tidyverse, dplyr, tidyr",
+            "Queuing Theory",
+            "Applied Case Study"
+        ]
     },
-    "Java Programming": {
-        "hours": 70,
-        "topics": ["Java Virtual Machine", "Data Types", "Operators and Language", "OOPs Concepts", "Constructs", "Inner Classes and Inheritance", "Interface and Package", "Exceptions", "Collections", "Threads", "Java.lang", "Java.util", "Lambda Expressions", "Introduction to Streams", "Introduction of JDBC API"]
+    "Java Programming and JVM": {
+        "hours": 60,
+        "topics": [
+            "Introduction to Java Virtual Machine",
+            "Data Types, Operators, and Language Basics",
+            "OOP Concepts",
+            "Program Constructs",
+            "Inner Classes and Inheritance",
+            "Interfaces and Packages",
+            "Exception Handling",
+            "Collections Framework",
+            "Threads",
+            "java.lang Package",
+            "java.util Package",
+            "Lambda Expressions",
+            "Introduction to Streams",
+            "Introduction to JDBC API"
+        ]
     },
-    "Advanced Analytics": {
+    "Business Analytics and Statistics": {
+        "hours": 100,
+        "topics": [
+            "Introduction to Business Analytics using Case Studies",
+            "Summary Statistics",
+            "Making Right Business Decisions",
+            "Foundational Statistical Concepts",
+            "Descriptive Statistics and Measures",
+            "Probability Theory",
+            "Probability Distributions (Normal, Binomial, Poisson)",
+            "Sampling and Estimation",
+            "Statistical Interfaces",
+            "Predictive Modelling and Analysis",
+            "Bayes' Theorem",
+            "Central Limit Theorem",
+            "Statistical Inference Terminology",
+            "Hypothesis Testing",
+            "Parametric Tests (ANOVA, t-test)",
+            "Non-Parametric Tests (Chi-Square, U-Test)",
+            "Data Exploration and Preparation",
+            "Correlation and Covariance",
+            "Handling Outliers",
+            "Simulation and Risk Analysis",
+            "Optimization (Linear and Integer)",
+            "Overview of Factor Analysis",
+            "Directional Data Analytics",
+            "Functional Data Analysis",
+            "Predictive Modelling from Correlation to Segmentation",
+            "Identifying Informative Attributes",
+            "Progressive Attributive Segmentation",
+            "Model Induction and Prediction",
+            "Supervised Segmentation",
+            "Visualizing Segmentations",
+            "Decision Trees as Rule Sets",
+            "Probability Estimation",
+            "Decision Analytics and Evaluating Classifiers",
+            "Analytical Frameworks and Baselines",
+            "Investment Implications from Performance",
+            "Evidence and Probabilities with Bayes' Rule",
+            "Probabilistic Reasoning",
+            "Business Strategy: Achieving Competitive Advantages",
+            "Sustaining Competitive Advantages"
+        ]
+    },
+    "Python Libraries and Data Tools": {
+        "hours": 20,
+        "topics": [
+            "Pandas",
+            "NumPy",
+            "Scrapy",
+            "Plotly",
+            "Beautiful Soup"
+        ]
+    },
+    "Database Concepts and Data Management": {
         "hours": 90,
-        "topics": ["Business Analytics case studies", "Summary Statistics", "Making Right Business Decisions", "Statistical Concepts", "Descriptive Statistics", "Probability theory", "Probability Distributions (Normal, Binomial, Poisson)", "Sampling and Estimation", "Statistical Interfaces", "Predictive modelling", "Bayes' Theorem", "Central Limit theorem", "Statistical Inference", "Hypothesis Testing", "Parametric Tests: ANOVA, t-test", "Non parametric Tests: chi-Square, U-Test", "Data Exploration & preparation", "Correlation", "Covariance", "Outliers", "Simulation and Risk Analysis", "Optimization", "Linear/Integer", "Factor Analysis", "Directional Data Analytics", "Functional Data Analysis", "Predictive Modelling", "Identifying Informative Attributes", "Supervised Segmentation", "Visualizing Segmentations", "Trees As Set Of Rules", "Probability Estimation", "Decision Analytics", "Evaluating Classifiers", "Evidence And Probabilities", "Bayes Rule", "Business Strategy", "Competitive Advantages", "Python Libraries - Pandas, Numpy, Scrapy, Plotly, Beautiful soup"]
+        "topics": [
+            "Database Concepts (File System vs DBMS)",
+            "OLAP vs OLTP",
+            "Database Storage Structures",
+            "Structured and Unstructured Data",
+            "SQL Commands (DDL, DML, DCL)",
+            "Stored Functions and Procedures",
+            "Conditional Constructs in SQL",
+            "Data Collection Techniques",
+            "Designing Database Schema",
+            "Normal Forms and ER Diagrams",
+            "Relational Database Modelling",
+            "Stored Procedures",
+            "Triggers",
+            "Systematic Data Gathering Tools",
+            "Data Warehousing Concepts",
+            "NoSQL Overview",
+            "Data Models (XML, etc.)",
+            "Working with MongoDB",
+            "Cassandra Overview",
+            "Comparing Cassandra with MongoDB",
+            "Working with Cassandra",
+            "Connecting Databases with Python",
+            "Introduction to Data Driven Decisions",
+            "Enterprise Data Management",
+            "Data Preparation and Cleaning Techniques"
+        ]
     },
-    "DBMS": {
+    "Understanding Data Lakes": {
+        "hours": 40,
+        "topics": [
+            "Data Lake Concepts",
+            "Architecture and Components",
+            "Data Lake vs Data Warehouse vs Lakehouse",
+            "Data Storage Management",
+            "Processing and Transformation",
+            "Workflow Orchestration",
+            "Analytics in Data Lakes",
+            "Delta Lake Case Study"
+        ]
+    },
+    "Introduction to Big Data": {
+        "hours": 30,
+        "topics": [
+            "Big Data Beyond the Hype",
+            "Big Data Skills and Sources",
+            "Big Data Adoption",
+            "Research Trends in Data Repositories",
+            "Data Sharing and Reuse Practices",
+            "Implications for Repository Data Curation"
+        ]
+    },
+    "Hadoop Fundamentals": {
         "hours": 90,
-        "topics": ["Database Concepts (File System and DBMS)", "OLAP vs OLTP", "Database Storage Structures", "Structured and Unstructured data", "SQL Commands (DDL, DML, DCL)", "Stored functions and procedures", "Conditional Constructs in SQL", "data collection", "Designing Database schema", "Normal Forms and ER Diagram", "Relational Database modelling", "Stored Procedures", "Triggers", "Data gathering", "Data warehousing concept", "No-SQL", "Data Models - XML", "working with MongoDB", "Cassandra - overview", "comparison with MongoDB", "working with Cassandra", "Connecting DB's with Python", "Data Driven Decisions", "Enterprise Data Management", "data preparation and cleaning", "Understanding Data Lakes", "Data Lake architecture", "Data Lake vs. Data Warehouse vs. Lakehouse", "data storage management", "processing and transformation", "workflow orchestration", "analytics in Data Lake", "case study using Delta Lake"]
+        "topics": [
+            "Introduction to Hadoop Programming",
+            "Hadoop Ecosystem and Stack",
+            "Hadoop Distributed File System (HDFS)",
+            "Components of Hadoop",
+            "Design of HDFS",
+            "Java Interfaces to HDFS",
+            "Architecture Overview",
+            "Development Environment",
+            "Hadoop Distributions and Commands",
+            "Eclipse Development",
+            "HDFS Command Line and Web Interfaces",
+            "HDFS Java API",
+            "Analyzing Data with Hadoop",
+            "Scaling Out",
+            "Hadoop Event Stream Processing",
+            "Complex Event Processing",
+            "MapReduce Introduction",
+            "Developing a MapReduce Application",
+            "How MapReduce Works",
+            "MapReduce Job Anatomy",
+            "Failure Handling",
+            "Job Scheduling",
+            "Shuffle and Sort",
+            "Task Execution",
+            "MapReduce Types and Formats",
+            "MapReduce Features",
+            "Real-World MapReduce"
+        ]
     },
-    "Big Data Technologies": {
-        "hours": 150,
-        "topics": ["Introduction to Big Data", "Big Data Skills", "Sources Of Big Data", "Big Data Adoption", "Data Sharing and Reuse", "Hadoop Introduction", "The ecosystem and stack", "HDFS", "Components of Hadoop", "Design of HDFS", "Java interfaces to HDFS", "Architecture overview", "Development Environment", "Hadoop distribution", "basic commands", "Eclipse development", "HDFS command line and web interfaces", "HDFS Java API", "Analyzing Data with Hadoop", "Scaling Out", "event stream processing", "complex event processing", "MapReduce Introduction", "Developing MapReduce Application", "How MapReduce Works", "MapReduce Job run", "Failures", "Job Scheduling", "Shuffle and Sort", "Task execution", "MapReduce Types and Formats", "MapReduce Features", "Real-World MapReduce", "Hadoop Environment", "Setting up Hadoop Cluster", "Cluster specification", "Cluster Setup and Installation", "Hadoop Configuration", "Security in Hadoop", "Administering Hadoop", "HDFS Monitoring & Maintenance", "Hadoop benchmarks", "Apache Airflow/ETL Informatica", "Data warehousing", "Data lakes", "Designing Data warehousing for ETL", "Designing Data Lakes for ETL", "ETL vs ELT", "Introduction to HIVE", "Programming with Hive", "Data warehouse system for Hadoop", "Optimizing with Combiners", "Bucketing", "sorting, indexing and searching", "map-side and reduce-side joins", "evolution, purpose and use", "Case Studies on Ingestion", "HBase Overview", "comparison and architecture", "java client API", "CRUD operations", "security", "Apache Spark Overview", "APIs for large-scale data processing", "Linking with Spark", "Initializing Spark", "RDDs", "External Datasets", "RDD Operations", "Passing Functions to Spark", "Job optimization", "Working with Key-Value Pairs", "Shuffle operations", "RDD Persistence", "Removing Data", "Shared Variables", "EDA using PySpark", "Deploying to Cluster", "Spark Streaming", "Spark MLlib and ML APIs", "Spark Data Frames/Spark SQL", "Integration of Spark and Kafka", "Setting up Kafka Producer and Consumer", "Kafka Connect API", "Map reduce", "Connecting DB's with Spark"]
-    },
-    "Data Visualization": {
+    "Hadoop Environment and Administration": {
         "hours": 50,
-        "topics": ["Business Intelligence - requirements, content and managements", "information Visualization", "Data analytics Life Cycle", "Analytic Processes and Tools", "Analysis vs. Reporting", "MS Excel: Functions, Formula, charts, Pivots and Lookups", "Data Analysis Tool pack", "Descriptive Summaries", "Correlation", "Regression", "Introduction to Tableau", "Data sources in Tableau", "Taxonomy of data visualization", "Numeric, String, Date Calculations", "LOD (Level of Detail) Expressions", "Modern Data Analytic Tools", "Visualization Techniques"]
+        "topics": [
+            "Setting up a Hadoop Cluster",
+            "Cluster Specification",
+            "Cluster Setup and Installation",
+            "Hadoop Configuration",
+            "Security in Hadoop",
+            "Administering Hadoop",
+            "HDFS Monitoring and Maintenance",
+            "Hadoop Benchmarks"
+        ]
     },
-    "Machine Learning & Deep Learning & GenAI": {
-        "hours": 140,
-        "topics": ["Introduction to machine learning", "Formal learning model - PAC learning", "Bias complexity trade off", "The VC Dimension", "Non-uniform learnability", "Structural risk minimization", "Occam's Razor", "No Free Lunch Theorem", "Regularization and Stability", "Model Selection and Validation", "Machine Learning taxonomy", "Supervised Learning", "Unsupervised Learning", "Semi-supervised Learning", "practical use cases of ML", "Clustering (K-Means and variants)", "Hierarchical Clustering", "Dimension Reduction (PCA, Kernel PCA, LDA, Random Projections)", "Fundamentals of information theory", "Classification and Regression", "KNN", "Decision Trees", "Bayesian analysis", "Naïve Bayes classifier", "Random forest", "Gradient boosting Machines", "SVM", "XGBoost", "CatBoost", "Linear and Non-linear regression", "Time series Forecasting", "Introduction to neural networks", "Neurons", "construction of networks", "backpropagation", "Deep Feedforward Networks", "Regularization for Deep Learning", "Optimization for Training Deep Models", "Convolutional Neural Networks", "Sequence modelling using RNNs", "Transfer Learning", "Autoencoders", "Object Detection", "Object Segmentation and Tracking", "Concepts of NLP", "Introduction to transformers", "Difference between encoder, decoder and encoder-decoder architectures", "Attention Mechanisms", "Overview of BERT", "Application of transformers", "Introduction to LARGE LANGUAGE MODELS", "Understanding and handling TEXT DATA", "fine-tuning pre-trained model", "Reward Models and Alignment Strategies", "Practical case studies using SLMs and LLMs", "Deployment of LLMs"]
+    "Apache Airflow and ETL Informatica": {
+        "hours": 30,
+        "topics": [
+            "Introduction to Data Warehousing",
+            "Introduction to Data Lakes",
+            "Designing Data Warehousing for ETL Pipelines",
+            "Designing Data Lakes for ETL Pipelines",
+            "ETL vs ELT"
+        ]
+    },
+    "Introduction to Hive": {
+        "hours": 40,
+        "topics": [
+            "Programming with Hive",
+            "Hive as a Data Warehouse System",
+            "Optimizing with Combiners",
+            "Bucketing Techniques",
+            "Sorting, Indexing, and Searching",
+            "Map-Side and Reduce-Side Joins",
+            "Hive Evolution and Purpose",
+            "Case Studies on Ingestion and Warehousing"
+        ]
+    },
+    "HBase": {
+        "hours": 30,
+        "topics": [
+            "HBase Overview",
+            "Architecture Comparison",
+            "HBase Java Client API",
+            "CRUD Operations in HBase",
+            "Security in HBase"
+        ]
+    },
+    "Apache Spark": {
+        "hours": 80,
+        "topics": [
+            "Spark Overview",
+            "APIs for Large-Scale Data Processing",
+            "Linking with Spark",
+            "Initializing Spark",
+            "Resilient Distributed Datasets (RDDs)",
+            "External Datasets",
+            "RDD Operations",
+            "Passing Functions to Spark",
+            "Job Optimization",
+            "Working with Key-Value Pairs",
+            "Shuffle Operations",
+            "RDD Persistence",
+            "Removing Data from RDDs",
+            "Shared Variables",
+            "Exploratory Data Analysis using PySpark",
+            "Deploying to a Cluster",
+            "Spark Streaming",
+            "Spark MLlib and ML APIs",
+            "Spark DataFrames and Spark SQL",
+            "Integrating Spark and Kafka",
+            "Setting up Kafka Producers and Consumers",
+            "Kafka Connect API",
+            "MapReduce Integration",
+            "Connecting Databases with Spark"
+        ]
+    },
+    "Business Intelligence and Visualization": {
+        "hours": 50,
+        "topics": [
+            "Business Intelligence Requirements",
+            "Information Visualization Principles",
+            "Data Analytics Life Cycle",
+            "Analytic Processes and Tools",
+            "Analysis vs Reporting",
+            "Microsoft Excel Functions and Formulas",
+            "Charts, Pivots, and Lookups",
+            "Data Analysis Toolpak",
+            "Descriptive Summaries",
+            "Correlation and Regression",
+            "Introduction to Tableau",
+            "Data Sources in Tableau",
+            "Taxonomy of Data Visualization",
+            "Numeric, String, and Date Calculations",
+            "Level of Detail (LOD) Expressions",
+            "Modern Data Analytics Tools",
+            "Visualization Techniques"
+        ]
+    },
+    "Machine Learning": {
+        "hours": 100,
+        "topics": [
+            "Introduction to Machine Learning",
+            "Formal Learning Model – PAC Learning",
+            "Bias-Complexity Trade-off",
+            "VC Dimension",
+            "Non-Uniform Learnability",
+            "Structural Risk Minimization",
+            "Occam's Razor",
+            "No Free Lunch Theorem",
+            "Regularization and Stability",
+            "Model Selection and Validation",
+            "Machine Learning Taxonomy",
+            "Supervised Learning",
+            "Unsupervised Learning",
+            "Semi-Supervised Learning",
+            "Practical Machine Learning Use Cases",
+            "Clustering (K-Means and Variants)",
+            "Hierarchical Clustering",
+            "Dimensionality Reduction (PCA, Kernel PCA, LDA, Random Projections)",
+            "Fundamentals of Information Theory",
+            "Classification and Regression Techniques",
+            "k-Nearest Neighbors",
+            "Decision Trees",
+            "Bayesian Analysis",
+            "Naive Bayes Classifier",
+            "Random Forest",
+            "Gradient Boosting Machines",
+            "Support Vector Machines",
+            "XGBoost",
+            "CatBoost",
+            "Linear and Non-Linear Regression",
+            "Time Series Forecasting"
+        ]
+    },
+    "Deep Learning": {
+        "hours": 90,
+        "topics": [
+            "Introduction to Neural Networks",
+            "Neurons and Network Construction",
+            "Backpropagation",
+            "Deep Feedforward Networks",
+            "Regularization for Deep Learning",
+            "Optimization for Training Deep Models",
+            "Convolutional Neural Networks",
+            "Sequence Modelling using Recurrent Neural Networks",
+            "Transfer Learning",
+            "Autoencoders",
+            "Object Detection",
+            "Object Segmentation and Tracking",
+            "Concepts of Natural Language Processing"
+        ]
+    },
+    "Generative AI": {
+        "hours": 60,
+        "topics": [
+            "Introduction to Transformers",
+            "Encoder, Decoder, and Encoder-Decoder Architectures",
+            "Attention Mechanisms",
+            "Overview of BERT",
+            "Applications of Transformers",
+            "Introduction to Large Language Models",
+            "Understanding and Handling Text Data",
+            "Fine-Tuning Pre-Trained Models",
+            "Reward Models and Alignment Strategies",
+            "Practical Case Studies using SLMs and LLMs",
+            "Deployment of LLMs"
+        ]
     }
 }
+
+SYLLABUS_MODULE_SEQUENCE = list(SYLLABUS_MODULES.keys())
 
 class GeminiFlashcardGenerator:
     def __init__(self, api_key: str = None):

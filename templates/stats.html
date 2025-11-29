@@ -61,19 +61,6 @@
     </div>
 </div>
 
-<div class="time-range-selector">
-    <button class="range-btn active" data-days="7">7 Days</button>
-    <button class="range-btn" data-days="14">14 Days</button>
-    <button class="range-btn" data-days="30">30 Days</button>
-    <button class="range-btn" data-days="60">60 Days</button>
-    <button class="range-btn" data-days="180">180 Days</button>
-</div>
-
-<div class="chart-container">
-    <h2>Accuracy Over Time <span id="accuracy-period">(Last 7 Days)</span></h2>
-    <canvas id="accuracyChart"></canvas>
-</div>
-
 <div class="recent-sessions">
     <h2>Recent Study Sessions</h2>
     {% if recent_sessions %}
@@ -108,11 +95,4 @@
     {% endif %}
 </div>
 
-<script>
-    let currentDays = 7; // Default to 7 days
-</script>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/stats.js') }}"></script>
 {% endblock %}

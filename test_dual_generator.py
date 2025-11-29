@@ -68,13 +68,13 @@ def test_shubham_generator():
         print(f"  - {module}: {topics_count} topics")
     
     # Test card generation
-    print("\nGenerating 2 sample cards for Python...")
+    print("\nGenerating 2 sample cards for Python Programming...")
     generator = GeminiFlashcardGenerator()
     
     try:
         result = generator.generate_flashcards(
-            module_name="Python",
-            topics=["Functions"],
+            module="Python Programming",
+            topics=["Functions and Functional Programming"],
             count=2,
             difficulty="medium"
         )

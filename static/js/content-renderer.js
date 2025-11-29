@@ -39,6 +39,25 @@ function renderContent(text) {
     // Inline math: $formula$
     escaped = escaped.replace(/\$([^\$]+)\$/g, '<span class="math-inline">$1</span>');
     
+    // Handle basic markdown formatting (for backward compatibility)
+    // Bold: **text** or __text__
+    escaped = escaped.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+    escaped = escaped.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    
+    // Italic: *text* or _text_ (but not if it's part of math or bold)
+    escaped = escaped.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+    escaped = escaped.replace(/_([^_]+)_/g, '<em>$1</em>');
+    
+    // Convert line breaks to <br> tags
+    // Double line breaks become paragraphs, single line breaks become <br>
+    escaped = escaped.replace(/\n\n/g, '</p><p>');
+    escaped = escaped.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph if we added paragraph breaks
+    if (escaped.includes('</p><p>')) {
+        escaped = '<p>' + escaped + '</p>';
+    }
+    
     return escaped;
 }
 

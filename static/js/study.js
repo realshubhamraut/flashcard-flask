@@ -1,6 +1,8 @@
 // Study session functionality - Simple tracking (no spaced repetition)
 
 let cardStartTime = Date.now();
+let sessionInProgress = false;
+let hasUnsavedProgress = false;
 
 function toggleHint(button) {
     const hintContent = button.nextElementSibling;
@@ -15,6 +17,10 @@ function toggleHint(button) {
 
 // Handle option selection with trippy button using event delegation
 document.addEventListener('DOMContentLoaded', function() {
+    // Set session as in progress
+    sessionInProgress = true;
+    hasUnsavedProgress = true;
+    
     // Use event delegation on the card-container for all option clicks
     const cardContainer = document.getElementById('card-container');
     
@@ -239,6 +245,8 @@ function deleteCard(cardId, event) {
             
             if (totalCards === 0) {
                 // No more cards
+                sessionInProgress = false;
+                hasUnsavedProgress = false;
                 alert('No more cards in this session!');
                 window.location.href = '/';
             } else {

@@ -232,6 +232,16 @@ main {
     margin-bottom: 2rem;
 }
 
+/* Parent deck name styling */
+.parent-deck-name {
+    color: #ff8c42;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .parent-deck-name {
+    color: #ffa85c;
+}
+
 /* Minimal Anki-style deck list */
 .deck-list-container {
     background: var(--bg-primary);

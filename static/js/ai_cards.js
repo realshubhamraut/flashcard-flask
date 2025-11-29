@@ -37,6 +37,11 @@ async function loadModules(generatorType = 'shubham') {
             const moduleSelect = document.getElementById('aiModule');
             moduleSelect.innerHTML = '<option value="">-- Select ' + 
                 (generatorType === 'payal' ? 'Subject' : 'Module') + ' --</option>';
+            const topicSelect = document.getElementById('aiTopic');
+            if (topicSelect) {
+                topicSelect.innerHTML = '<option value="">All topics (general overview)</option>';
+                topicSelect.disabled = true;
+            }
             
             data.modules.forEach(module => {
                 const option = document.createElement('option');
@@ -58,14 +63,17 @@ function onModuleChange() {
     const modal = document.getElementById('aiModal');
     const generatorType = modal.dataset.generatorType || 'shubham';
     const moduleSelect = document.getElementById('aiModule');
-    const topicCheckboxes = document.getElementById('aiTopicCheckboxes');
+    const topicSelect = document.getElementById('aiTopic');
     const selectedModule = moduleSelect.value;
     
-    topicCheckboxes.innerHTML = '';
+    if (!topicSelect) {
+        return;
+    }
+    
+    topicSelect.innerHTML = '<option value="">All topics (general overview)</option>';
+    topicSelect.disabled = true;
     
     if (!selectedModule) {
-        topicCheckboxes.innerHTML = '<small style="color: rgba(255,255,255,0.5);">Select a ' + 
-            (generatorType === 'payal' ? 'subject' : 'module') + ' first</small>';
         return;
     }
     
@@ -77,38 +85,20 @@ function onModuleChange() {
     fetch(apiEndpoint)
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.topics && data.topics.length > 0) {
-                data.topics.forEach((topic, index) => {
-                    const label = document.createElement('label');
-                    label.style.display = 'block';
-                    label.style.marginBottom = '8px';
-                    label.style.cursor = 'pointer';
-                    label.style.padding = '5px';
-                    label.style.borderRadius = '4px';
-                    label.style.transition = 'background 0.2s';
-                    label.onmouseover = () => label.style.background = 'rgba(255,255,255,0.1)';
-                    label.onmouseout = () => label.style.background = 'transparent';
-                    
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.name = 'topic_checkbox';
-                    checkbox.value = topic;
-                    checkbox.id = `topic_${index}`;
-                    checkbox.style.marginRight = '8px';
-                    
-                    const text = document.createTextNode(topic);
-                    
-                    label.appendChild(checkbox);
-                    label.appendChild(text);
-                    topicCheckboxes.appendChild(label);
+            if (data.success && Array.isArray(data.topics) && data.topics.length > 0) {
+                data.topics.forEach(topic => {
+                    const option = document.createElement('option');
+                    option.value = topic;
+                    option.textContent = topic;
+                    topicSelect.appendChild(option);
                 });
-            } else {
-                topicCheckboxes.innerHTML = '<small style="color: rgba(255,255,255,0.5);">No topics available</small>';
+                topicSelect.disabled = false;
             }
         })
         .catch(error => {
             console.error('Error loading topics:', error);
-            topicCheckboxes.innerHTML = '<small style="color: #ff6b6b;">Error loading topics</small>';
+            topicSelect.innerHTML = '<option value="">Unable to load topics</option>';
+            topicSelect.disabled = true;
         });
 }
 
@@ -122,16 +112,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const generatorType = modal.dataset.generatorType || 'shubham';
             const formData = new FormData(aiForm);
             
-            // Get checked topics
-            const checkedTopics = Array.from(document.querySelectorAll('#aiTopicCheckboxes input[type="checkbox"]:checked'))
-                .map(cb => cb.value);
-            
             const deckId = parseInt(formData.get('deck_id'));
+            const selectedTopic = formData.get('topic');
             
             const data = {
                 deck_id: deckId,
                 module: formData.get('module'),
-                topics: checkedTopics.length > 0 ? checkedTopics : null,
+                topic: selectedTopic && selectedTopic.length ? selectedTopic : null,
                 count: parseInt(formData.get('count')),
                 difficulty: formData.get('difficulty')
             };

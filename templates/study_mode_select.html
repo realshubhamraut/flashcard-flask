@@ -11,7 +11,7 @@
 <div class="study-mode-container">
     <div class="study-mode-card" onclick="window.location.href='{{ url_for('study', deck_id=deck.id, mode='all') }}'">
         <div class="mode-icon">📚</div>
-        <h2>Study Entirely</h2>
+        <h2>Study All Cards</h2>
         <p class="mode-description">Study all cards in this deck</p>
         <div class="mode-count">{{ all_cards }} cards</div>
         <button class="btn btn-primary">Start</button>
